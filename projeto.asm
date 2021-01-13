@@ -6,3 +6,12 @@ teste: .asciiz "seila"
 la $a0, hexdigits+3 # 1|2 -    +2 = 2   +1 = |2  sem nada = 1|2 
 li $v0, 4
 syscall
+
+addi $s0, $zero, 1 # flag for roundLoop ($s0 = 1)
+
+gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
+	#code ...
+	j gameLoop # back to 'gameLoop'
+	
+gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
+		syscall
