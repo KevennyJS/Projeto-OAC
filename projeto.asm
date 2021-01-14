@@ -1,6 +1,7 @@
 # table of responsibilities of registrators 
 # $s0 -> flag of gameloop
 # $s1 -> aux of small works
+# $s2 -> aux of small works
 # $s7 -> aux for player iterator
 
 .data
@@ -20,12 +21,16 @@ gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 
 distributionOfPieces: beq $s1,28, distributionOfPiecesEnd # while($s1 != 28)
 	# distribution address of pieces for players...
+	# for i=0;i<7;i++
+	# la $s2, pieces + randomNumber() # load piece adress to $s2
+	# jogadorX[i] = $s2 # load $s2 in jodadorX: .word [i]
+	 
 	addi $s1, $s1, 1 # $s1 += 1
 	j distributionOfPieces # back to distributionOfPieces
 distributionOfPiecesEnd:
 
 # jogador X 
-# peça escolhilda é valida ? Se for diferente de jogador 1 verificar todas peças  
+# peça escolhilda é valida ? 
 # joga a peça
 # printa o tabuleiro
 #limpa a peça de jogadorX
