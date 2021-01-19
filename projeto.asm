@@ -2,6 +2,7 @@
 # $s0 -> flag of gameloop
 # $s1 -> aux of small works
 # $s2 -> aux of small works
+# $s3 -> aux of small works
 # $s7 -> aux for player iterator
 
 .data
@@ -21,12 +22,19 @@ gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 
 distributionOfPieces: beq $s1,28, distributionOfPiecesEnd # while($s1 != 28)
 	# distribution address of pieces for players...
-	# for i=0;i<7;i++
+	addi $s3, $zero,0 			# $s3 = 0 
+	piecesIterator:	slti $t0, $s3, 7	# for i=0;i<7;i++
+	beq $t0, $zero,piecesIteratorEnd 	#$t0 == 0 end loop
+	
 	# la $s2, pieces + randomNumber() # load piece adress to $s2
 	# jogadorX[i] = $s2 # load $s2 in jodadorX: .word [i]
-	 
-	addi $s1, $s1, 1 # $s1 += 1
-	j distributionOfPieces # back to distributionOfPieces
+	
+	addi $s3, $s3, 1			# $s3 += 1
+	j piecesIterator 			# back to piecesIterator
+	
+	piecesIteratorEnd:	 		
+	addi $s1, $s1, 1 			# $s1 += 1
+	j distributionOfPieces 			# back to distributionOfPieces
 distributionOfPiecesEnd:
 
 # jogador X 
