@@ -50,7 +50,9 @@ distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 		
 j distributionOfPieces 					# back to distributionOfPieces
 distributionOfPiecesEnd:
-
+addi $v0, $zero, 10 #syscal of end program
+	syscall
+	
 # switch between who will receive the pieces
 givePiecesPlayer1:mul $t3, $t4, 4
 	 sw $s1, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
@@ -95,8 +97,7 @@ addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 #gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
 #		syscall
 
-addi $v0, $zero, 10 #syscal of end program
-	syscall
+
 
 	
 
