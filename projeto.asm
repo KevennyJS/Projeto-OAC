@@ -2,6 +2,7 @@
 # $s0 -> flag of gameloop
 # $s1 -> aux of small works (using in distributionOfPieces for iterator pieces)
 # $s5 -> flag of playerIterator
+# $s6 -> file descriptor 
 # $t3 -> aux for parse Iterators
 # $t4 -> aux of small works (using in player 1 count)
 # $t5 -> aux of small works (using in player 2 count)
@@ -15,6 +16,10 @@ jogador1: .word -0 -1 -1 -1 -1 -1 -1
 jogador2: .word -2 -1 -1 -1 -1 -1 -1
 jogador3: .word -3 -1 -1 -1 -1 -1 -1
 jogador4: .word -4 -1 -1 -1 -1 -1 -1
+
+str_exit: .asciiz "test.txt"
+str_data: .asciiz "This is a test!"
+str_data_end:
 
 .text
 
@@ -50,6 +55,11 @@ distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 		
 j distributionOfPieces 					# back to distributionOfPieces
 distributionOfPiecesEnd:
+
+jal file_open
+jal file_write
+jal file_close
+
 addi $v0, $zero, 10 #syscal of end program
 	syscall
 	
@@ -98,6 +108,27 @@ addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 #		syscall
 
 
-
+file_open:
+	li   $v0, 13       # system call for open file
+	la   $a0, str_exit     # output file name
+	li   $a1, 1        # Open for writing (flags are 0: read, 1: write)
+	li   $a2, 0        # mode is ignored
+	syscall            # open a file (file descriptor returned in $v0)
+	move $s6, $v0      # save the file descriptor 
+    jr $ra
+file_write:
+    li $v0, 15
+    move $a0, $s6      		# file descriptor 
+    la $a1, str_data		#$a1 = address of output buffer
+    la $a2, str_data_end	#$a2 = number of characters to write
+    la $a3, str_data
+    subu $a2, $a2, $a3  # computes the length of the string, this is really a constant
+    syscall
+    jr $ra
+file_close:
+    li $v0, 16  
+    move $a0, $s6       # file descriptor to close
+    syscall
+    jr $ra
 	
 
