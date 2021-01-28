@@ -1,13 +1,16 @@
 # table of responsibilities of registrators 
 # $s0 -> flag of gameloop
-# $s1 -> aux of small works (using in distributionOfPieces for iterator pieces)
+# $s1 -> aux of small works (using in distributionOfPieces for iterator pieces) | (after distribution of pieces) -> use in loop at parse word to asciiz
 # $s5 -> flag of playerIterator
-# $s6 -> file descriptor 
-# $t3 -> aux for parse Iterators
-# $t4 -> aux of small works (using in player 1 count)
-# $t5 -> aux of small works (using in player 2 count)
-# $t6 -> aux of small works (using in player 3 count)
-# $t7 -> aux of small works (using in player 4 count)
+# $s6 -> file descriptor
+# $s7 -> aux for parse .word to asciiz  
+# $t1 -> aux for parse .word to asciiz 
+# $t2 -> aux for parse .word to asciiz 
+# $t3 -> aux for parse Iterators | (after distribution of pieces) -> use in parse word to asciiz
+# $t4 -> aux of small works (using in player 1 count) | (after distribution of pieces) -> use in parse word to asciiz
+# $t5 -> aux of small works (using in player 2 count) |
+# $t6 -> aux of small works (using in player 3 count) |
+# $t7 -> aux of small works (using in player 4 count) |
 
 
 .data
@@ -17,21 +20,14 @@ jogador2: .word -2 -1 -1 -1 -1 -1 -1
 jogador3: .word -3 -1 -1 -1 -1 -1 -1
 jogador4: .word -4 -1 -1 -1 -1 -1 -1
 
-a = pieces[0];
-srt_data[0] = a;
-
-# sb
-# ti => 0 + 48
-# sb $t1, str_data
 
 str_exit: .asciiz "test.txt"
-str_data: .asciiz "This is a test!"
-str_data_end:
+data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1"
+data_jogadorForOut_end:
 
 .text
-
 # Tabuleiro: 1|2 => 2|5 => 1|2 => 2|5 
-#mfhi mflo para pegar o resto da divisao
+
 
 distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
 		beq $t0, $zero,distributionOfPiecesEnd 	# $t0 == 0 end loop
@@ -62,6 +58,8 @@ distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 		
 j distributionOfPieces 					# back to distributionOfPieces
 distributionOfPiecesEnd:
+
+jal setJogadorOut	# load info in jogadorOut for file_write
 
 jal file_open
 jal file_write
@@ -125,11 +123,11 @@ file_open:
     jr $ra
 file_write:
     li $v0, 15
-    move $a0, $s6      		# file descriptor 
-    la $a1, str_data		#$a1 = address of output buffer
-    la $a2, str_data_end	#$a2 = number of characters to write
-    la $a3, str_data		#  byte of str_data_end - bytes of srt_data 
-    subu $a2, $a2, $a3  	# computes the length of the string, this is really a constant
+    move $a0, $s6      			# file descriptor 
+    la $a1, data_jogadorForOut		#$a1 = address of output buffer
+    la $a2, data_jogadorForOut_end	#$a2 = number of characters to write
+    la $a3, data_jogadorForOut		#  byte of str_data_end - bytes of srt_data 
+    subu $a2, $a2, $a3  		# computes the length of the string, this is really a constant
     syscall
     jr $ra
 file_close:
@@ -138,5 +136,34 @@ file_close:
     syscall
     jr $ra
 	
+	
+setJogadorOut:
 
-# crir a função para 
+addi $s1, $zero,0	# this register use with iterator in loopOfPieces
+addi $t4, $zero,0	# this register use with iterator in jogadorOut
+
+loopOfPieces: slti $t0, $s1, 7			# for i=0;i<28;i++ 
+		beq $t0, $zero,loopOfPiecesEnd 	# $t0 == 0 end loop
+	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in jogadorX
+	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]
+	 
+	li   $s7, 10				# $s7 = 10
+	div  $t2, $s7		
+	mfhi $s7				# $s7 = 1st number
+	mflo $t2				# $t2 = 2nd number
+	
+	addi $t2, $t2, 48			# parse to ascii
+	addi $s7, $s7, 48			# parse to ascii
+	
+	sb   $t2, data_jogadorForOut($t4)	# jogadorForOut[$t4] = $t2
+	addi $t4, $t4, 1			# position + 1
+	sb   $s7, data_jogadorForOut($t4)	# jogadorForOut[$t4] = $s7
+	addi $t4, $t4, 2			# position + 2  (2 because blank space) 	
+	
+	addi $s1, $s1, 1			# $s1 += 1
+	j loopOfPieces # back to loop
+loopOfPiecesEnd:
+
+jr $ra		# End rotine
+
+
