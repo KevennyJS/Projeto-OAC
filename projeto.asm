@@ -1,6 +1,7 @@
 # table of responsibilities of registrators 
 # $s0 -> flag of gameloop
 # $s1 -> aux of small works (using in distributionOfPieces for iterator pieces) | (after distribution of pieces) -> use in loop at parse word to asciiz
+# $s4 -> (in Gameloop) using to save piece choice in round
 # $s5 -> flag of playerIterator
 # $s6 -> file descriptor
 # $s7 -> aux for parse .word to asciiz  
@@ -19,11 +20,15 @@ jogador1: .word -0 -1 -1 -1 -1 -1 -1
 jogador2: .word -2 -1 -1 -1 -1 -1 -1
 jogador3: .word -3 -1 -1 -1 -1 -1 -1
 jogador4: .word -4 -1 -1 -1 -1 -1 -1
-
+board:    .space 428  # 107 * 4 = 428 # 0->1->2->3->4->5->6->11->12->13->14->15->16->22->23->24->25->26->33->34->35->36->43->44->45->46->55->56->66
 
 str_exit: .asciiz "test.txt"
-data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1"
+data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1" 
 data_jogadorForOut_end:
+
+prompt_selectPiece: .asciiz "Select piece: (0-6)"
+reply_prompt_pieceNumber: .space 2 # including '\0'
+
 
 .text
 # Tabuleiro: 1|2 => 2|5 => 1|2 => 2|5 
@@ -59,15 +64,50 @@ distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 j distributionOfPieces 					# back to distributionOfPieces
 distributionOfPiecesEnd:
 
-jal setJogadorOut	# load info in jogadorOut for file_write
+addi $s5, $zero,0 	#set player1 to first player 
 
+#GAMELOOP
+addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
+gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
+
+# in here write in file player 1 pieces
+bne $s5, 0, updatePlayerOutputEnd	# if (s5 != 0) jump to updatePlayerOutputEnd
+updatePlayerOutput:
+jal setJogadorOut			# load info in jogadorOut for file_write
 jal file_open
 jal file_write
 jal file_close
+updatePlayerOutputEnd:
 
-addi $v0, $zero, 10 #syscal of end program
-	syscall
-	
+bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
+inputPieceOfPlayer1:
+# Print prompt
+la $a0, prompt_selectPiece # address of string to print
+li $v0, 4
+syscall
+
+# Input piece
+la $a0, reply_prompt_pieceNumber # address to store string at
+li $a1, 2 # maximum number of chars (including '\0')
+li $v0, 8
+syscall
+inputPieceOfPlayer1End:
+
+# para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero n�o seja uma dezena ele se transforma em dezena.
+# peça escolhilda é valida ? 
+# joga a peça
+# printa o tabuleiro
+#limpa a peça de jogadorX
+
+# if Jogador X tem zero peças ? 
+# if se o jogo fechou  
+# jogador X + 1
+
+j gameLoop # back to 'gameLoop'
+gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
+		syscall
+
+
 # switch between who will receive the pieces
 givePiecesPlayer1:mul $t3, $t4, 4
 	 sw $s1, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
@@ -93,25 +133,6 @@ givePiecesPlayer4:mul $t3, $t7, 4
 	 addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
 #########################################################
-
-addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
-#gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
-
-
-# jogador X 
-# peça escolhilda é valida ? 
-# joga a peça
-# printa o tabuleiro
-#limpa a peça de jogadorX
-
-# if Jogador X tem zero peças ? 
-# if se o jogo fechou  
-# jogador X + 1
-
-#	j gameLoop # back to 'gameLoop'
-#gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
-#		syscall
-
 
 file_open:
     li   $v0, 13       # system call for open file
