@@ -1,27 +1,28 @@
 # table of responsibilities of registrators 
-# $s0 -> flag of gameloop
+# $s0 -> (Main Works)flag of gameloop  
 # $s1 -> aux of small works (using in distributionOfPieces for iterator pieces) | (after distribution of pieces) -> use in loop at parse word to asciiz | using in game loop for botChoicePiece
-# $s2 -> using with a flag to signalize the "I don't have piece for this round"
-# $s4 -> (in Gameloop) using to save piece choice in round
-# $s5 -> flag of playerIterator
-# $s6 -> file descriptor
-# $s7 -> aux for parse .word to asciiz | (after using for pass piece for verification) 
+# $s2 -> (Main Works)using with a flag to signalize the "I don't have piece for this round"
+# $s3 -> (Main Works)last piece of board (position)
+# $s4 -> (Main Works)(in Gameloop) using to save piece choice in round
+# $s5 -> (Main Works)flag of playerIterator
+# $s6 -> aux of small works using to save file descriptor
+# $s7 -> aux for parse .word to asciiz | (after using for pass piece for verification)
 # $t1 -> aux for parse .word to asciiz | (using for pass piece for verification)
 # $t2 -> aux for parse .word to asciiz 
-# $t3 -> aux for parse Iterators | (after distribution of pieces) -> use in parse word to asciiz
-# $t4 -> aux of small works (using in player 1 count) | (after distribution of pieces) -> use in parse word to asciiz
-# $t5 -> aux of small works (using in player 2 count) | 
-# $t6 -> aux of small works (using in player 3 count) | 
+# $t3 -> aux for parse Iterators | (after distribution of pieces) -> use in parse word to asciiz | piece verification
+# $t4 -> aux of small works (using in player 1 count) | (after distribution of pieces) -> use in parse word to asciiz | piece verification
+# $t5 -> aux of small works (using in player 2 count) | piece verification
+# $t6 -> aux of small works (using in player 3 count) | piece verification
 # $t7 -> aux of small works (using in player 4 count) | (using for save verification results)
 
 
 .data
 pieces: .word 0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 22, 23, 24, 25, 26, 33, 34, 35, 36, 43, 44, 45, 46, 55, 56, 66
 jogador1: .word -0 -1 -1 -1 -1 -1 -1
-jogador2: .word -2 -1 -1 -1 -1 -1 -1
-jogador3: .word -3 -1 -1 -1 -1 -1 -1
-jogador4: .word -4 -1 -1 -1 -1 -1 -1
-board:    .space 428  # 107 * 4 = 428 # 0->1->2->3->4->5->6->11->12->13->14->15->16->22->23->24->25->26->33->34->35->36->43->44->45->46->55->56->66
+jogador2: .word -1 -1 -1 -1 -1 -1 -1
+jogador3: .word -2 -1 -1 -1 -1 -1 -1
+jogador4: .word -3 -1 -1 -1 -1 -1 -1
+board:    .word -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1 
 
 str_exit: .asciiz "test.txt"
 data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1" 
@@ -65,7 +66,8 @@ distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 j distributionOfPieces 					# back to distributionOfPieces
 distributionOfPiecesEnd:
 
-addi $s5, $zero,0 	#set player1 to first player 
+addi $s5, $zero,0 	# set player1 to first player 
+addi $s3, $zero,0	# set last piece position
 
 #GAMELOOP
 addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
@@ -86,19 +88,20 @@ bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlaye
 
 inputPieceOfPlayer1:
 # Print prompt
-la $a0, prompt_selectPiece # address of string to print
-li $v0, 4
-syscall
+	la $a0, prompt_selectPiece # address of string to print
+	li $v0, 4
+	syscall
 
 # Input piece
-la $a0, reply_prompt_pieceNumber # address to store string at
-li $a1, 2 # maximum number of chars (including '\0')
-li $v0, 8
-syscall
+	la $a0, reply_prompt_pieceNumber # address to store string at
+	li $a1, 2 # maximum number of chars (including '\0')
+	li $v0, 8
+	syscall
 
-# TODO verify if player select correct piece
 
-lw   $t1, reply_prompt_pieceNumber	# $t1 = input_prompt 
+	lw   $t1, reply_prompt_pieceNumber	# $t1 = input_prompt 
+	jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
+	beq $t7, 1, botChoicePieceOkay
 
 inputPieceOfPlayer1End:
 
@@ -109,45 +112,27 @@ botChoicePiece: slti $t0, $s1, 7			# for i=0;i<28;i++
 		
 		jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
 		beq $t7, 1, botChoicePieceOkay
-		j botChoicePiece			# back to botChoicePiece
+			
+		addi $s1, $s1, 1			# $s1 += 1
+		j botChoicePiece			# back loop
 botChoicePieceOkay:
 	addi $s2, $zero, 1				# this is a valid piece for play, so this player[$s5] have piece to play		
 botChoicePieceEnd:
 
-beq $s2, 0, pre_round_end # if player $t5 not have piece, so go to next round
+beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next round
 
 # $t1 save piece choice in $t1
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
 
-bne $s5, 0, selectPiecePlayer1End      # if (s5 != 0) jump to selectPiecePlayer1End
-selectPiecePlayer1:
-lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]
-selectPiecePlayer1End:
-
-bne $s5, 1, selectPiecePlayer2End      # if (s5 != 0) jump to selectPiecePlayer1End
-selectPiecePlayer2:
-lw   $t2, jogador2($t1)			# $t2 = jogador[$t1]
-selectPiecePlayer2End:
-
-bne $s5, 2, selectPiecePlayer3End      # if (s5 != 0) jump to selectPiecePlayer1End
-selectPiecePlayer3:
-lw   $t2, jogador3($t1)			# $t2 = jogador[$t1]
-selectPiecePlayer3End:
-
-bne $s5, 3, selectPiecePlayer4End      # if (s5 != 0) jump to selectPiecePlayer1End
-selectPiecePlayer4:
-lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
-selectPiecePlayer4End:
-
-
 # TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero não seja uma dezena ele se transforma em dezena. 
-# joga a peça
-# printa o tabuleiro
-#limpa a peça de jogadorX
+# TODOjoga a peça
+# TODOprinta o tabuleiro
+# TODOlimpa a peça de jogadorX
 
-# if Jogador X tem zero pieces ? 
-# if se o jogo fechou  
-# jogador X + 1
+# TODO if Jogador X tem zero pieces ? 
+# TODO if se o jogo fechou  
+addi $s5, $s5, 1	# jogador X + 1
+
 pre_round_end:
 j gameLoop # back to 'gameLoop'
 gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
@@ -235,3 +220,61 @@ jr $ra		# End rotine
 
 
 pieceVerification: # $t1 for piece selected, $t7 result of verification
+
+addi $t1, $s1, 0				# $t1 = $s1(iteretor for on botChoicePiece)
+						# get first tabuleiro and verify
+						# last tabuleiro and verify
+
+	mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
+	
+bne $s5, 0, verifyPiecePlayer1End		# if ($s5 != 0)
+verifyPiecePlayer1:
+	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]				
+verifyPiecePlayer1End:			
+
+bne $s5, 1, verifyPiecePlayer2End		# if ($s5 != 1)
+verifyPiecePlayer2:
+	lw   $t2, jogador2($t1)			# $t2 = jogador[$t1]
+verifyPiecePlayer2End:
+
+bne $s5, 2, verifyPiecePlayer3End		# if ($s5 != 2)
+verifyPiecePlayer3:
+	lw   $t2, jogador3($t1)			# $t2 = jogador[$t1]
+verifyPiecePlayer3End:
+
+bne $s5, 3, verifyPiecePlayer4End		# if ($s5 != 3)
+verifyPiecePlayer4:
+	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
+verifyPiecePlayer4End:
+
+	beq $t2, -1, pieceVerificationEndOkay	# if piece($t2) equal -1 is valid 
+
+	li   $t5, 10				# $t5 = 10
+	div  $t2, $t5		
+	mfhi $t2				# $t2 = 1st number
+	mflo $t3				# $t3 = 2nd number
+	
+	#first piece of board
+	lw   $t4, board($zero)			# $t4 = board[0]
+	div  $t4, $t5				# $t4 / ($t5 = 10)
+	mfhi $t4				# $t4 = 1st number
+	
+	beq  $t2, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
+	beq  $t3, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
+	
+	#last piece of board
+	mul  $t6, $s3, 4			# $s3 -> last piece of board (position)
+	lw   $t4, board($t6)			# $t4 = board[0]
+	div  $t4, $t5				# $t4 / ($t5 = 10)
+	mflo $t4				# $t4 = 2nd number
+	
+	beq  $t2, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
+	beq  $t3, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
+	
+	addi $t7, $zero, 0	# $t7 = 0
+	j pieceVerificationEnd	# go to end rotine
+	
+pieceVerificationEndOkay:
+	addi $t7, $zero, 1	# $t7 = 1
+pieceVerificationEnd:
+jr $ra		# End rotine
