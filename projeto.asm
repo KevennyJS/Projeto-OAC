@@ -1,17 +1,18 @@
 # table of responsibilities of registrators 
 # $s0 -> flag of gameloop
-# $s1 -> aux of small works (using in distributionOfPieces for iterator pieces) | (after distribution of pieces) -> use in loop at parse word to asciiz
+# $s1 -> aux of small works (using in distributionOfPieces for iterator pieces) | (after distribution of pieces) -> use in loop at parse word to asciiz | using in game loop for botChoicePiece
+# $s2 -> using with a flag to signalize the "I don't have piece for this round"
 # $s4 -> (in Gameloop) using to save piece choice in round
 # $s5 -> flag of playerIterator
 # $s6 -> file descriptor
-# $s7 -> aux for parse .word to asciiz  
-# $t1 -> aux for parse .word to asciiz 
+# $s7 -> aux for parse .word to asciiz | (after using for pass piece for verification) 
+# $t1 -> aux for parse .word to asciiz | (using for pass piece for verification)
 # $t2 -> aux for parse .word to asciiz 
 # $t3 -> aux for parse Iterators | (after distribution of pieces) -> use in parse word to asciiz
 # $t4 -> aux of small works (using in player 1 count) | (after distribution of pieces) -> use in parse word to asciiz
-# $t5 -> aux of small works (using in player 2 count) |
-# $t6 -> aux of small works (using in player 3 count) |
-# $t7 -> aux of small works (using in player 4 count) |
+# $t5 -> aux of small works (using in player 2 count) | 
+# $t6 -> aux of small works (using in player 3 count) | 
+# $t7 -> aux of small works (using in player 4 count) | (using for save verification results)
 
 
 .data
@@ -80,6 +81,9 @@ jal file_close
 updatePlayerOutputEnd:
 
 bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
+
+#TODO verify if have possible piece
+
 inputPieceOfPlayer1:
 # Print prompt
 la $a0, prompt_selectPiece # address of string to print
@@ -91,18 +95,60 @@ la $a0, reply_prompt_pieceNumber # address to store string at
 li $a1, 2 # maximum number of chars (including '\0')
 li $v0, 8
 syscall
+
+# TODO verify if player select correct piece
+
+lw   $t1, reply_prompt_pieceNumber	# $t1 = input_prompt 
+
 inputPieceOfPlayer1End:
 
-# para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero n„o seja uma dezena ele se transforma em dezena.
-# pe√ßa escolhilda √© valida ? 
-# joga a pe√ßa
-# printa o tabuleiro
-#limpa a pe√ßa de jogadorX
+addi $s2, $zero, 0 	#set flag of have piece to zero
+beq $s5, 0, botChoicePieceEnd      # if (s5 == 0) jump to botChoicePieceEnd
+botChoicePiece: slti $t0, $s1, 7			# for i=0;i<28;i++ 
+		beq $t0, $zero, botChoicePieceEnd 	# $t0 == 0 end loop
+		
+		jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
+		beq $t7, 1, botChoicePieceOkay
+		j botChoicePiece			# back to botChoicePiece
+botChoicePieceOkay:
+	addi $s2, $zero, 1				# this is a valid piece for play, so this player[$s5] have piece to play		
+botChoicePieceEnd:
 
-# if Jogador X tem zero pe√ßas ? 
+beq $s2, 0, pre_round_end # if player $t5 not have piece, so go to next round
+
+# $t1 save piece choice in $t1
+mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
+
+bne $s5, 0, selectPiecePlayer1End      # if (s5 != 0) jump to selectPiecePlayer1End
+selectPiecePlayer1:
+lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]
+selectPiecePlayer1End:
+
+bne $s5, 1, selectPiecePlayer2End      # if (s5 != 0) jump to selectPiecePlayer1End
+selectPiecePlayer2:
+lw   $t2, jogador2($t1)			# $t2 = jogador[$t1]
+selectPiecePlayer2End:
+
+bne $s5, 2, selectPiecePlayer3End      # if (s5 != 0) jump to selectPiecePlayer1End
+selectPiecePlayer3:
+lw   $t2, jogador3($t1)			# $t2 = jogador[$t1]
+selectPiecePlayer3End:
+
+bne $s5, 3, selectPiecePlayer4End      # if (s5 != 0) jump to selectPiecePlayer1End
+selectPiecePlayer4:
+lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
+selectPiecePlayer4End:
+
+
+# TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero n„o seja uma dezena ele se transforma em dezena. 
+# joga a peÁa
+# printa o tabuleiro
+#limpa a peÁa de jogadorX
+
+# if Jogador X tem zero pieces ? 
 # if se o jogo fechou  
 # jogador X + 1
-
+pre_round_end:
 j gameLoop # back to 'gameLoop'
 gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
 		syscall
@@ -188,3 +234,4 @@ loopOfPiecesEnd:
 jr $ra		# End rotine
 
 
+pieceVerification: # $t1 for piece selected, $t7 result of verification
