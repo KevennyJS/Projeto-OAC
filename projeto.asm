@@ -66,6 +66,8 @@ distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 j distributionOfPieces 					# back to distributionOfPieces
 distributionOfPiecesEnd:
 
+##########################################################################################
+
 addi $s5, $zero,0 	# set player1 to first player 
 addi $s3, $zero,0	# set last piece position
 
@@ -85,6 +87,16 @@ updatePlayerOutputEnd:
 bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
 
 #TODO verify if have possible piece
+addi $s1,$zero, 0 	# $s1 set to zero
+has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+		beq $t0, $zero, botChoicePieceEnd 	# $t0 == 0 end loop
+		
+		jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
+		beq $t7, 1, has_possible_pieces_End
+			
+		addi $s1, $s1, 1			# $s1 += 1
+		j has_possible_pieces			# back loop
+has_possible_pieces_End:
 
 inputPieceOfPlayer1:
 # Print prompt
@@ -97,20 +109,22 @@ inputPieceOfPlayer1:
 	li $a1, 2 # maximum number of chars (including '\0')
 	li $v0, 8
 	syscall
-
-
-	lw   $t1, reply_prompt_pieceNumber	# $t1 = input_prompt 
+	
+	# have problem in here
+	lb   $t1, reply_prompt_pieceNumber	# $t1 = input_prompt # $t1 recive bytes number(ascii code in dec)
+	sub  $t1, $t1, 48 			
 	jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
-	beq $t7, 1, botChoicePieceOkay
+	beq $t7, 1, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
 
 inputPieceOfPlayer1End:
 
 addi $s2, $zero, 0 	#set flag of have piece to zero
 beq $s5, 0, botChoicePieceEnd      # if (s5 == 0) jump to botChoicePieceEnd
-botChoicePiece: slti $t0, $s1, 7			# for i=0;i<28;i++ 
-		beq $t0, $zero, botChoicePieceEnd 	# $t0 == 0 end loop
+addi $s1,$zero, 0 	# $s1 set to zero
+botChoicePiece: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+		beq $t0, $zero, pre_round_end 		# $t0 == 0 end loop
 		
-		jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
+		jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
 		beq $t7, 1, botChoicePieceOkay
 			
 		addi $s1, $s1, 1			# $s1 += 1
@@ -124,21 +138,22 @@ beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next roun
 # $t1 save piece choice in $t1
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
 
-# TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero não seja uma dezena ele se transforma em dezena. 
-# TODOjoga a peça
+# TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero nï¿½o seja uma dezena ele se transforma em dezena. 
+# TODOjoga a peï¿½a
 # TODOprinta o tabuleiro
-# TODOlimpa a peça de jogadorX
+# TODOlimpa a peï¿½a de jogadorX
 
 # TODO if Jogador X tem zero pieces ? 
 # TODO if se o jogo fechou  
 addi $s5, $s5, 1	# jogador X + 1
 
 pre_round_end:
+addi $s0, $s0, 1 # flag for gameLoop ($s0 += 1)
 j gameLoop # back to 'gameLoop'
 gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
 		syscall
 
-
+############################################################################################
 # switch between who will receive the pieces
 givePiecesPlayer1:mul $t3, $t4, 4
 	 sw $s1, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
@@ -188,7 +203,7 @@ file_close:
     syscall
     jr $ra
 	
-	
+################################################################################################
 setJogadorOut:
 
 addi $s1, $zero,0	# this register use with iterator in loopOfPieces
@@ -218,12 +233,11 @@ loopOfPiecesEnd:
 
 jr $ra		# End rotine
 
+##########################################################################################
 
-pieceVerification: # $t1 for piece selected, $t7 result of verification
+pieceVerification: # ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
 
 addi $t1, $s1, 0				# $t1 = $s1(iteretor for on botChoicePiece)
-						# get first tabuleiro and verify
-						# last tabuleiro and verify
 
 	mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
 	
@@ -247,7 +261,7 @@ verifyPiecePlayer4:
 	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
 verifyPiecePlayer4End:
 
-	beq $t2, -1, pieceVerificationEndOkay	# if piece($t2) equal -1 is valid 
+	#TODO verify if, in the first round, the first piece played need are six bomb
 
 	li   $t5, 10				# $t5 = 10
 	div  $t2, $t5		
@@ -256,6 +270,7 @@ verifyPiecePlayer4End:
 	
 	#first piece of board
 	lw   $t4, board($zero)			# $t4 = board[0]
+	
 	div  $t4, $t5				# $t4 / ($t5 = 10)
 	mfhi $t4				# $t4 = 1st number
 	
@@ -265,6 +280,10 @@ verifyPiecePlayer4End:
 	#last piece of board
 	mul  $t6, $s3, 4			# $s3 -> last piece of board (position)
 	lw   $t4, board($t6)			# $t4 = board[0]
+	
+	# TODO six bomb problem
+	beq $t4, -1, pieceVerificationEndOkay	# if last piece of board equal -1, so not have pieces in board
+	
 	div  $t4, $t5				# $t4 / ($t5 = 10)
 	mflo $t4				# $t4 = 2nd number
 	
