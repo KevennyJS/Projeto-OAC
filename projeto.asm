@@ -8,12 +8,13 @@
 # $s6 -> aux of small works using to save file descriptor
 # $s7 -> aux for parse .word to asciiz | (after using for pass piece for verification)
 # $t1 -> aux for parse .word to asciiz | (using for pass piece for verification)
-# $t2 -> aux for parse .word to asciiz 
+# $t2 -> aux for parse .word to asciiz | (using in play_piece_in_board)
 # $t3 -> aux for parse Iterators | (after distribution of pieces) -> use in parse word to asciiz | piece verification
 # $t4 -> aux of small works (using in player 1 count) | (after distribution of pieces) -> use in parse word to asciiz | piece verification
 # $t5 -> aux of small works (using in player 2 count) | piece verification
 # $t6 -> aux of small works (using in player 3 count) | piece verification
 # $t7 -> aux of small works (using in player 4 count) | (using for save verification results)
+# $t8 -> aux of small works (using in play_piece_in_board)
 
 
 .data
@@ -140,8 +141,8 @@ beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next roun
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
 
 # TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero nï¿½o seja uma dezena ele se transforma em dezena. 
-jal play_piece_in_board
 # TODO joga a peï¿½a
+jal play_piece_in_board
 # TODOprinta o tabuleiro
 # TODOlimpa a peï¿½a de jogadorX
 
@@ -269,6 +270,7 @@ verifyPiecePlayer4End:
 	mfhi $t2				# $t2 = 1st number
 	mflo $t3				# $t3 = 2nd number
 	
+	# validate first round six's bomb
 	bne $s0, 1, is_not_first_Round
 	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
 	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
@@ -281,31 +283,33 @@ verifyPiecePlayer4End:
 	div  $t4, $t5				# $t4 / ($t5 = 10)
 	mfhi $t4				# $t4 = 1st number
 	
-	beq  $t2, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
-	beq  $t3, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
+	beq  $t2, $t4, pieceVerificationEndOkay1 # if $t2 == $t4 is valid
+	beq  $t3, $t4, pieceVerificationEndOkay1 # if $t2 == $t4 is valid
 	
 	#last piece of board
 	mul  $t6, $s3, 4			# $s3 -> last piece of board (position)
 	lw   $t4, board($t6)			# $t4 = board[0]
 	
-	# TODO six bomb problem
 	beq $t4, -1, pieceVerificationEndOkay	# if last piece of board equal -1, so not have pieces in board
 	
 	div  $t4, $t5				# $t4 / ($t5 = 10)
 	mflo $t4				# $t4 = 2nd number
 	
-	beq  $t2, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
-	beq  $t3, $t4, pieceVerificationEndOkay # if $t2 == $t4 is valid
+	beq  $t2, $t4, pieceVerificationEndOkay2 # if $t2 == $t4 is valid
+	beq  $t3, $t4, pieceVerificationEndOkay2 # if $t2 == $t4 is valid
 	
 	addi $t7, $zero, 0	# $t7 = 0
 	j pieceVerificationEnd	# go to end rotine
 	
-pieceVerificationEndOkay:
+pieceVerificationEndOkay1:
 	addi $t7, $zero, 1	# $t7 = 1
+	j pieceVerificationEnd
+pieceVerificationEndOkay2:
+	addi $t7, $zero, 2	# $t7 = 1
 pieceVerificationEnd:
 jr $ra		# End rotine
 
-
+############################################################################################
 play_piece_in_board:	#($t1 for piece index) 
 # if $t7 == 1, first place of board is valid, if t7 == 2 last place of board is valid
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
@@ -334,11 +338,12 @@ beq $t7, 1, play_first_place_board
 beq $t7, 2, play_last_place_board
 
 play_first_place_board:
-# for (int i = 0; i<($s3+1)) # precisa deslocar todas peças uma casa pra frente
+# for (int i = 0; i<($s3+1)) # precisa deslocar todas peï¿½as uma casa pra frente
 # board[i+1] = board[i]
 
 play_last_place_board:
-#s3
+mul $t8, $s3, 4		# last position number * 4
+sw $t2, board($t8)	# board[$t8] 
 
 play_place_board_end:
 jr $ra #end rotine
