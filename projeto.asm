@@ -86,7 +86,7 @@ updatePlayerOutputEnd:
 
 bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
 
-#TODO verify if have possible piece
+#verify if have possible piece
 addi $s1,$zero, 0 	# $s1 set to zero
 has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
 		beq $t0, $zero, botChoicePieceEnd 	# $t0 == 0 end loop
@@ -261,12 +261,19 @@ verifyPiecePlayer4:
 	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
 verifyPiecePlayer4End:
 
-	#TODO verify if, in the first round, the first piece played need are six bomb
-
+	# TODO verify if, in the first round, the first piece played need are six bomb (if $s0 == 1)
+	  
+	# player's piece
 	li   $t5, 10				# $t5 = 10
 	div  $t2, $t5		
 	mfhi $t2				# $t2 = 1st number
 	mflo $t3				# $t3 = 2nd number
+	
+	bne $s0, 1, is_not_first_Round
+	bne $t2, 6, is_not_first_Round		# first part of player's piece is diff of '6'
+	bne $t2, 6, is_not_first_Round		# first part of player's piece is diff of '6'
+	j pieceVerificationEndOkay		# this piece is '66'
+	is_not_first_Round:
 	
 	#first piece of board
 	lw   $t4, board($zero)			# $t4 = board[0]
