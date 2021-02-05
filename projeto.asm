@@ -93,7 +93,7 @@ has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++
 		beq $t0, $zero, botChoicePieceEnd 	# $t0 == 0 end loop
 		
 		jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
-		beq $t7, 1, has_possible_pieces_End
+		bne $t7, 0, has_possible_pieces_End
 			
 		addi $s1, $s1, 1			# $s1 += 1
 		j has_possible_pieces			# back loop
@@ -115,18 +115,18 @@ inputPieceOfPlayer1:
 	lb   $t1, reply_prompt_pieceNumber	# $t1 = input_prompt # $t1 recive bytes number(ascii code in dec)
 	sub  $t1, $t1, 48 			
 	jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
-	beq $t7, 1, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
+	bne $t7, 0, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
 
 inputPieceOfPlayer1End:
 
-addi $s2, $zero, 0 	#set flag of have piece to zero
+addi $s2, $zero, 0 	# set flag of have piece to zero
 beq $s5, 0, botChoicePieceEnd      # if (s5 == 0) jump to botChoicePieceEnd
 addi $s1,$zero, 0 	# $s1 set to zero
 botChoicePiece: slti $t0, $s1, 7			# for i=0;i<7;i++ 
 		beq $t0, $zero, pre_round_end 		# $t0 == 0 end loop
 		
 		jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
-		beq $t7, 1, botChoicePieceOkay
+		bne $t7, 0, botChoicePieceOkay
 			
 		addi $s1, $s1, 1			# $s1 += 1
 		j botChoicePiece			# back loop
@@ -140,7 +140,8 @@ beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next roun
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
 
 # TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero nï¿½o seja uma dezena ele se transforma em dezena. 
-# TODOjoga a peï¿½a
+jal play_piece_in_board
+# TODO joga a peï¿½a
 # TODOprinta o tabuleiro
 # TODOlimpa a peï¿½a de jogadorX
 
@@ -236,8 +237,8 @@ jr $ra		# End rotine
 
 ##########################################################################################
 
-pieceVerification: # ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
-
+pieceVerification: # ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification) 
+										# if $t7 == 1, first place of board is valid, if t7 == 2 last place of board is valid
 addi $t1, $s1, 0				# $t1 = $s1(iteretor for on botChoicePiece)
 
 	mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
@@ -261,8 +262,6 @@ bne $s5, 3, verifyPiecePlayer4End		# if ($s5 != 3)
 verifyPiecePlayer4:
 	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
 verifyPiecePlayer4End:
-
-	# TODO verify if, in the first round, the first piece played need are six bomb (if $s0 == 1)
 	  
 	# player's piece
 	li   $t5, 10				# $t5 = 10
@@ -305,3 +304,41 @@ pieceVerificationEndOkay:
 	addi $t7, $zero, 1	# $t7 = 1
 pieceVerificationEnd:
 jr $ra		# End rotine
+
+
+play_piece_in_board:	#($t1 for piece index) 
+# if $t7 == 1, first place of board is valid, if t7 == 2 last place of board is valid
+mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
+	
+bne $s5, 0, verifyPiecePlayer1End		# if ($s5 != 0)
+verifyPiecePlayer1:
+	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]				
+verifyPiecePlayer1End:			
+
+bne $s5, 1, verifyPiecePlayer2End		# if ($s5 != 1)
+verifyPiecePlayer2:
+	lw   $t2, jogador2($t1)			# $t2 = jogador[$t1]
+verifyPiecePlayer2End:
+
+bne $s5, 2, verifyPiecePlayer3End		# if ($s5 != 2)
+verifyPiecePlayer3:
+	lw   $t2, jogador3($t1)			# $t2 = jogador[$t1]
+verifyPiecePlayer3End:
+
+bne $s5, 3, verifyPiecePlayer4End		# if ($s5 != 3)
+verifyPiecePlayer4:
+	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
+verifyPiecePlayer4End:
+
+beq $t7, 1, play_first_place_board
+beq $t7, 2, play_last_place_board
+
+play_first_place_board:
+# for (int i = 0; i<($s3+1)) # precisa deslocar todas peças uma casa pra frente
+# board[i+1] = board[i]
+
+play_last_place_board:
+#s3
+
+play_place_board_end:
+jr $ra #end rotine
