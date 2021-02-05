@@ -87,7 +87,8 @@ updatePlayerOutputEnd:
 bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
 
 #verify if have possible piece
-addi $s1,$zero, 0 	# $s1 set to zero
+addi $s1, $zero, 0 	# $s1 set to zero
+addi $t7, $zero, 0 	# $t7 set to zero
 has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
 		beq $t0, $zero, botChoicePieceEnd 	# $t0 == 0 end loop
 		
@@ -270,8 +271,8 @@ verifyPiecePlayer4End:
 	mflo $t3				# $t3 = 2nd number
 	
 	bne $s0, 1, is_not_first_Round
-	bne $t2, 6, is_not_first_Round		# first part of player's piece is diff of '6'
-	bne $t2, 6, is_not_first_Round		# first part of player's piece is diff of '6'
+	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
+	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
 	j pieceVerificationEndOkay		# this piece is '66'
 	is_not_first_Round:
 	
