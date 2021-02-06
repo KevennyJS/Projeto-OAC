@@ -1,6 +1,6 @@
 # table of responsibilities of registrators 
 # $s0 -> (Main Works)flag of gameloop  
-# $s1 -> aux of small works (using in distributionOfPieces for iterator pieces) | (after distribution of pieces) -> use in loop at parse word to asciiz | using in game loop for botChoicePiece
+# $s1 -> aux of small works (using in distributionOfPieces for iterator pieces) | (after distribution of pieces) -> use in loop at parse word to asciiz | using in game loop for botChoicePiece | using for board output
 # $s2 -> (Main Works)using with a flag to signalize the "I don't have piece for this round"
 # $s3 -> (Main Works)last piece of board (position)
 # $s4 -> (Main Works)(in Gameloop) using to save piece choice in round
@@ -23,11 +23,15 @@ jogador1: .word -0 -1 -1 -1 -1 -1 -1
 jogador2: .word -1 -1 -1 -1 -1 -1 -1
 jogador3: .word -2 -1 -1 -1 -1 -1 -1
 jogador4: .word -3 -1 -1 -1 -1 -1 -1
-board:    .word -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1 
+board:    .word 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 
 
-str_exit: .asciiz "test.txt"
+str_player1_exit: .asciiz "player1.txt"
 data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1" 
 data_jogadorForOut_end:
+
+str_board_exit: .asciiz "board.txt"
+data_board_out: .asciiz "-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1" 
+data_board_out_end:
 
 prompt_selectPiece: .asciiz "Select piece: (0-6)"
 reply_prompt_pieceNumber: .space 2 # including '\0'
@@ -80,10 +84,17 @@ gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 bne $s5, 0, updatePlayerOutputEnd	# if (s5 != 0) jump to updatePlayerOutputEnd
 updatePlayerOutput:
 jal setJogadorOut			# load info in jogadorOut for file_write
-jal file_open
-jal file_write
+jal player1_file_open
+jal player1_file_write
 jal file_close
 updatePlayerOutputEnd:
+
+update_board_Output:
+jal set_board_out			# load info in jogadorOut for file_write
+jal board_file_open
+jal board_file_write
+jal file_close
+update_board_OutputEnd:
 
 bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
 
@@ -151,7 +162,6 @@ jal play_piece_in_board
 
 pre_round_end:
 
-playerIteratorResetEnd:
 beq  $s5, 3, playerIteratorReset 	# if #s5 == 3 goto playerIteratorReset
 
 addi $s5, $s5, 1	# jogador X + 1
@@ -193,15 +203,15 @@ givePiecesPlayer4:mul $t3, $t7, 4
 	j exitGivePiecesToPlayer
 #########################################################
 
-file_open:
-    li   $v0, 13       # system call for open file
-    la   $a0, str_exit     # output file name
-    li   $a1, 1        # Open for writing (flags are 0: read, 1: write)
-    li   $a2, 0        # mode is ignored
-    syscall            # open a file (file descriptor returned in $v0)
-    move $s6, $v0      # save the file descriptor 
+player1_file_open:
+    li   $v0, 13       				# system call for open file
+    la   $a0, str_player1_exit      # output file name
+    li   $a1, 1       				# Open for writing (flags are 0: read, 1: write)
+    li   $a2, 0        				# mode is ignored
+    syscall            				# open a file (file descriptor returned in $v0)
+    move $s6, $v0      				# save the file descriptor 
     jr $ra
-file_write:
+player1_file_write:
     li $v0, 15
     move $a0, $s6      			# file descriptor 
     la $a1, data_jogadorForOut		#$a1 = address of output buffer
@@ -222,7 +232,7 @@ setJogadorOut:
 addi $s1, $zero,0	# this register use with iterator in loopOfPieces
 addi $t4, $zero,0	# this register use with iterator in jogadorOut
 
-loopOfPieces: slti $t0, $s1, 7			# for i=0;i<28;i++ 
+loopOfPieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
 		beq $t0, $zero,loopOfPiecesEnd 	# $t0 == 0 end loop
 	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in jogadorX
 	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]
@@ -284,7 +294,7 @@ verifyPiecePlayer4End:
 	bne $s0, 1, is_not_first_Round
 	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
 	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
-	j pieceVerificationEndOkay		# this piece is '66'
+	j pieceVerificationEndOkay2		# this piece is '66'
 	is_not_first_Round:
 	
 	#first piece of board
@@ -300,7 +310,7 @@ verifyPiecePlayer4End:
 	mul  $t6, $s3, 4			# $s3 -> last piece of board (position)
 	lw   $t4, board($t6)			# $t4 = board[0]
 	
-	beq $t4, -1, pieceVerificationEndOkay	# if last piece of board equal -1, so not have pieces in board
+	beq $t4, -1, pieceVerificationEndOkay2	# if last piece of board equal -1, so not have pieces in board
 	
 	div  $t4, $t5				# $t4 / ($t5 = 10)
 	mflo $t4				# $t4 = 2nd number
@@ -324,25 +334,25 @@ play_piece_in_board:	#($t1 for piece index)
 # if $t7 == 1, first place of board is valid, if t7 == 2 last place of board is valid
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
 	
-bne $s5, 0, verifyPiecePlayer1End		# if ($s5 != 0)
-verifyPiecePlayer1:
+bne $s5, 0, setcePlayer1End		# if ($s5 != 0)
+setPiecePlayer1:
 	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]				
-verifyPiecePlayer1End:			
+setcePlayer1End:			
 
-bne $s5, 1, verifyPiecePlayer2End		# if ($s5 != 1)
-verifyPiecePlayer2:
+bne $s5, 1, setPiecePlayer2End		# if ($s5 != 1)
+setPiecePlayer2:
 	lw   $t2, jogador2($t1)			# $t2 = jogador[$t1]
-verifyPiecePlayer2End:
+setPiecePlayer2End:
 
-bne $s5, 2, verifyPiecePlayer3End		# if ($s5 != 2)
-verifyPiecePlayer3:
+bne $s5, 2, setPiecePlayer3End		# if ($s5 != 2)
+setPiecePlayer3:
 	lw   $t2, jogador3($t1)			# $t2 = jogador[$t1]
-verifyPiecePlayer3End:
+setPiecePlayer3End:
 
-bne $s5, 3, verifyPiecePlayer4End		# if ($s5 != 3)
-verifyPiecePlayer4:
+bne $s5, 3, setPiecePlayer4End		# if ($s5 != 3)
+setPiecePlayer4:
 	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
-verifyPiecePlayer4End:
+setPiecePlayer4End:
 
 beq $t7, 1, play_first_place_board
 beq $t7, 2, play_last_place_board
@@ -356,5 +366,57 @@ mul $t8, $s3, 4		# last position number * 4
 sw $t2, board($t8)	# board[$t8] 
 
 # TODOlimpa a pe�a de jogador
+
 play_place_board_end:
 jr $ra #end rotine
+
+
+##########################################################################################
+set_board_out:
+
+addi $s1, $zero,0	# this register use with iterator in boar_loopOfPieces
+addi $t4, $zero,0	# this register use with iterator in jogadorOut
+
+board_loopOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
+		beq $t0, $zero,board_loopOfPiecesEnd 	# $t0 == 0 end loop
+	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in boardX
+	lw   $t2, board($t1)			# $t2 = board[$t1]
+	 
+	li   $s7, 10				# $s7 = 10
+	div  $t2, $s7		
+	mfhi $s7				# $s7 = 1st number
+	mflo $t2				# $t2 = 2nd number
+	
+	addi $t2, $t2, 48			# parse to ascii
+	addi $s7, $s7, 48			# parse to ascii
+	
+	sb   $t2, data_board_out($t4)	# jogadorForOut[$t4] = $t2
+	addi $t4, $t4, 1			# position + 1
+	sb   $s7, data_board_out($t4)	# jogadorForOut[$t4] = $s7
+	addi $t4, $t4, 2			# position + 2  (2 because blank space) 	
+	
+	addi $s1, $s1, 1			# $s1 += 1
+	j board_loopOfPieces # back to loop
+board_loopOfPiecesEnd:
+
+jr $ra		# End rotine
+
+##########################################################################################
+
+board_file_open:
+    li   $v0, 13       				# system call for open file
+    la   $a0, str_board_exit		# output file name
+    li   $a1, 1       				# Open for writing (flags are 0: read, 1: write)
+    li   $a2, 0        				# mode is ignored
+    syscall            				# open a file (file descriptor returned in $v0)
+    move $s6, $v0      				# save the file descriptor 
+    jr $ra
+board_file_write:
+    li $v0, 15
+    move $a0, $s6      				# file descriptor 
+    la $a1, data_board_out		#$a1 = address of output buffer
+    la $a2, data_board_out_end	#$a2 = number of characters to write
+    la $a3, data_board_out		#  byte of str_data_end - bytes of srt_data 
+    subu $a2, $a2, $a3  			# computes the length of the string, this is really a constant
+    syscall
+    jr $ra
