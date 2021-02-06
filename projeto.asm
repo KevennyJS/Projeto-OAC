@@ -146,10 +146,21 @@ jal play_piece_in_board
 
 
 # TODO if Jogador X tem zero pieces ? 
-# TODO if se o jogo fechou  
-addi $s5, $s5, 1	# jogador X + 1
+# TODO if se o jogo fechou
+
 
 pre_round_end:
+
+playerIteratorResetEnd:
+beq  $s5, 3, playerIteratorReset 	# if #s5 == 3 goto playerIteratorReset
+
+addi $s5, $s5, 1	# jogador X + 1
+j playerIteratorResetEnd
+
+playerIteratorReset:
+addi $s5, $zero, 0	# ($s5)jogador = 0
+playerIteratorResetEnd:
+
 addi $s0, $s0, 1 # flag for gameLoop ($s0 += 1)
 j gameLoop # back to 'gameLoop'
 gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
