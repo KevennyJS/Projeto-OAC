@@ -5,7 +5,7 @@
 # $s3 -> (Main Works)last piece of board (position)
 # $s4 -> (Main Works)(in Gameloop) using to save piece choice in round
 # $s5 -> (Main Works)flag of playerIterator
-# $s6 -> aux of small works using to save file descriptor
+# $s6 -> aux of small works using to save file descriptor | (use in play_piece_in_board for reposition)
 # $s7 -> aux for parse .word to asciiz | (after using for pass piece for verification)
 # $t1 -> aux for parse .word to asciiz | (using for pass piece for verification)
 # $t2 -> aux for parse .word to asciiz | (using in play_piece_in_board)
@@ -13,8 +13,9 @@
 # $t4 -> aux of small works (using in player 1 count) | (after distribution of pieces) -> use in parse word to asciiz | piece verification
 # $t5 -> aux of small works (using in player 2 count) | piece verification
 # $t6 -> aux of small works (using in player 3 count) | piece verification
-# $t7 -> aux of small works (using in player 4 count) | (using for save verification results)
-# $t8 -> aux of small works (using in play_piece_in_board)
+# $t7 -> aux of small works (using in player 4 count) | (using for save verification results)| (using for print round info)
+# $t8 -> aux of small works |(use in play_piece_in_board for reposition)| (using for print round info)
+# $t9 -> aux of small works |(use in play_piece_in_board for reposition)| (using for print round info)
 
 
 .data
@@ -36,11 +37,17 @@ data_board_out_end:
 prompt_selectPiece: .asciiz "Select piece: (0-6)"
 reply_prompt_pieceNumber: .space 2 # including '\0'
 
+round_info_prompt_str: .asciiz "* Round " 		# 8 positions
+player_info_prompt_str: .asciiz "* Player " 		# 9 positions
+var_number_info_str: .space 3 				# including '\0'
+
+ln: .space 1	# it's '\n'
 
 .text
-# Tabuleiro: 1|2 => 2|5 => 1|2 => 2|5 
+li $t0, 0xa
+sb $t0, ln($zero) 
 
-
+addi $t0, $zero, 0		#$t0 = 0
 distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
 		beq $t0, $zero,distributionOfPiecesEnd 	# $t0 == 0 end loop
 
@@ -80,6 +87,9 @@ addi $s3, $zero,0	# set last piece position
 addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 
+jal print_nextline
+jal print_round_info
+
 # in here write in file player 1 pieces
 bne $s5, 0, updatePlayerOutputEnd	# if (s5 != 0) jump to updatePlayerOutputEnd
 updatePlayerOutput:
@@ -110,6 +120,8 @@ has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++
 		addi $s1, $s1, 1			# $s1 += 1
 		j has_possible_pieces			# back loop
 has_possible_pieces_End:
+
+beq $t7, 0, pre_round_end		# if not has possible_piece, go to next round
 
 inputPieceOfPlayer1:
 # Print prompt
@@ -239,8 +251,8 @@ loopOfPieces: slti $t0, $s1, 7			# for i=0;i<7;i++
 	 
 	li   $s7, 10				# $s7 = 10
 	div  $t2, $s7		
-	mfhi $s7				# $s7 = 1st number
-	mflo $t2				# $t2 = 2nd number
+	mfhi $t2				# $t2 = 1st number
+	mflo $s7				# $s7 = 2nd number
 	
 	addi $t2, $t2, 48			# parse to ascii
 	addi $s7, $s7, 48			# parse to ascii
@@ -293,7 +305,7 @@ verifyPiecePlayer4End:
 	# validate first round six's bomb
 	bne $s0, 1, is_not_first_Round
 	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
-	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
+	bne $t3, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
 	j pieceVerificationEndOkay2		# this piece is '66'
 	is_not_first_Round:
 	
@@ -365,13 +377,28 @@ beq $t7, 2, play_last_place_board
 
 play_first_place_board:
 # for (int i = 0; i<($s3+1)) # precisa deslocar todas pe�as uma casa pra frente
-# board[i+1] = board[i]
+add $s1, $zero, $s3
+add $t0, $zero, $zero		# $t0 = 0
+reposition_board_loop: beq $t0, $s1, reposition_board_loop_end			# for i=s3;i>0+1;i--  	
+		addi $t9, $s1, 1							# $t9 = nextpostion
+
+		mul $t8, $s1, 4								# $t8 = ($s1*4)
+		lw  $s6, board($t8)							# $t6 = board[$t8]
+
+		mul  $t9, $t9, 4
+		sw $s6, board($t9)							# board[$s1+1] = board[$s1]
+		
+		subi $s1, $s1, 1							# $s1 = $s1 - 1
+		
+		j reposition_board_loop					#´back loop
+reposition_board_loop_end: 
+
+sw $t2, board($zero)								# board[0] = $t2
 
 play_last_place_board:
 mul $t8, $s3, 4		# last position number * 4
 sw $t2, board($t8)	# board[$t8] 
 
-# TODO clear position after play
 
 play_place_board_end:
 jr $ra #end rotine
@@ -426,3 +453,70 @@ board_file_write:
     subu $a2, $a2, $a3  			# computes the length of the string, this is really a constant
     syscall
     jr $ra
+
+
+###############################################################################################
+print_round_info:	# (need)$s0,$s5 | (use)$t7,$t8,$t9
+
+	# Print prompt round info
+	la $a0, round_info_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+
+	# round number
+	addi $t7, $zero, 0
+	li   $t9, 10				# $t9 = 10
+	div  $s0, $t9		
+	mfhi $t9				# $t9 = 1st number
+	mflo $t8				# $t8 = 2nd number
+	
+	addi $t8, $t8, 48			# parse to ascii
+	addi $t9, $t9, 48			# parse to ascii
+	
+	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
+	addi $t7, $t7, 1			# position + 1
+	sb   $t9, var_number_info_str($t7)	# jogadorForOut[$t7] = $t4	
+	addi $t7, $t7, 1
+	li   $t9, 0x20
+	sb   $t9, var_number_info_str($t7)
+		
+
+	# Print var
+	la $a0, var_number_info_str  # address of string to print
+	li $v0, 4
+	syscall
+
+	# Print prompt player info
+	la $a0, player_info_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+
+	# round number
+	addi $t7, $zero, 0
+	
+	li   $t8,48
+	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
+	addi $t7, $t7, 1
+	
+	addi $t8, $s5, 48			# parse to ascii
+	
+	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
+	addi $t7, $t7, 1			# position + 1
+	li   $t8, 0xa
+	sb   $t8, var_number_info_str($t7)
+		
+
+	# Print var
+	la $a0, var_number_info_str  # address of string to print
+	li $v0, 4
+	syscall
+
+	jr $ra
+###################################################################################
+
+print_nextline:
+	la $a0, ln($zero)  # address of string to print
+	li $v0, 4
+	syscall
+
+jr $ra
