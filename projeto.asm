@@ -333,25 +333,31 @@ jr $ra		# End rotine
 play_piece_in_board:	#($t1 for piece index) 
 # if $t7 == 1, first place of board is valid, if t7 == 2 last place of board is valid
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
-	
-bne $s5, 0, setcePlayer1End		# if ($s5 != 0)
+
+li  $t8, 99							# charge $t8 with number that represents null in logic game
+
+bne $s5, 0, setPiecePlayer1End		# if ($s5 != 0)
 setPiecePlayer1:
-	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]				
-setcePlayer1End:			
+	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]
+	sw	 $t8, jogador1($t1) 		# jogador[$t1] = 99
+setPiecePlayer1End:			
 
 bne $s5, 1, setPiecePlayer2End		# if ($s5 != 1)
 setPiecePlayer2:
 	lw   $t2, jogador2($t1)			# $t2 = jogador[$t1]
+	sw	 $t8, jogador2($t1) 		# jogador[$t1] = 99
 setPiecePlayer2End:
 
 bne $s5, 2, setPiecePlayer3End		# if ($s5 != 2)
 setPiecePlayer3:
 	lw   $t2, jogador3($t1)			# $t2 = jogador[$t1]
+	sw	 $t8, jogador3($t1) 		# jogador[$t1] = 99
 setPiecePlayer3End:
 
 bne $s5, 3, setPiecePlayer4End		# if ($s5 != 3)
 setPiecePlayer4:
 	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
+	sw	 $t8, jogador4($t1) 		# jogador[$t1] = 99
 setPiecePlayer4End:
 
 beq $t7, 1, play_first_place_board
@@ -365,7 +371,7 @@ play_last_place_board:
 mul $t8, $s3, 4		# last position number * 4
 sw $t2, board($t8)	# board[$t8] 
 
-# TODOlimpa a pe�a de jogador
+# TODO clear position after play
 
 play_place_board_end:
 jr $ra #end rotine
@@ -379,23 +385,23 @@ addi $t4, $zero,0	# this register use with iterator in jogadorOut
 
 board_loopOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
 		beq $t0, $zero,board_loopOfPiecesEnd 	# $t0 == 0 end loop
-	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in boardX
+	mul  $t1, $s1, 4 				# $t1 = position in bytes of pieces in boardX
 	lw   $t2, board($t1)			# $t2 = board[$t1]
 	 
-	li   $s7, 10				# $s7 = 10
+	li   $s7, 10					# $s7 = 10
 	div  $t2, $s7		
-	mfhi $s7				# $s7 = 1st number
-	mflo $t2				# $t2 = 2nd number
+	mfhi $s7						# $s7 = 1st number
+	mflo $t2						# $t2 = 2nd number
 	
-	addi $t2, $t2, 48			# parse to ascii
-	addi $s7, $s7, 48			# parse to ascii
+	addi $t2, $t2, 48				# parse to ascii
+	addi $s7, $s7, 48				# parse to ascii
 	
-	sb   $t2, data_board_out($t4)	# jogadorForOut[$t4] = $t2
-	addi $t4, $t4, 1			# position + 1
-	sb   $s7, data_board_out($t4)	# jogadorForOut[$t4] = $s7
-	addi $t4, $t4, 2			# position + 2  (2 because blank space) 	
+	sb   $t2, data_board_out($t4)	# data_board_out[$t4] = $t2
+	addi $t4, $t4, 1				# position + 1
+	sb   $s7, data_board_out($t4)	# data_board_out[$t4] = $s7
+	addi $t4, $t4, 2				# position + 2  (2 because blank space) 	
 	
-	addi $s1, $s1, 1			# $s1 += 1
+	addi $s1, $s1, 1				# $s1 += 1
 	j board_loopOfPieces # back to loop
 board_loopOfPiecesEnd:
 
