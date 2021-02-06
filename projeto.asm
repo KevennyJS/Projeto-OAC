@@ -141,10 +141,9 @@ beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next roun
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
 
 # TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero n�o seja uma dezena ele se transforma em dezena. 
-# TODO joga a pe�a
+# TODO play the piece
 jal play_piece_in_board
-# TODOprinta o tabuleiro
-# TODOlimpa a pe�a de jogadorX
+
 
 # TODO if Jogador X tem zero pieces ? 
 # TODO if se o jogo fechou  
@@ -345,5 +344,6 @@ play_last_place_board:
 mul $t8, $s3, 4		# last position number * 4
 sw $t2, board($t8)	# board[$t8] 
 
+# TODOlimpa a pe�a de jogador
 play_place_board_end:
 jr $ra #end rotine
