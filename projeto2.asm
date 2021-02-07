@@ -64,8 +64,8 @@ addi $s5, $zero, 0 # $s5 = 0
 addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 
-jal set_player1_str
-jal set_board_out_str
+jal set_player1_str		#parse array to string
+jal set_board_out_str	#parse array to string
 jal print_round_info
 jal print_board_info
 jal print_player_pieces_info
@@ -75,15 +75,16 @@ bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlaye
 #verify if have possible piece
 addi $s1, $zero, 0 	# $s1 set to zero
 addi $t7, $zero, 0 	# $t7 set to zero
-has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
-	beq $t0, $zero, pre_round_end 	# $t0 == 0 end loop
+
+ has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+ 	beq $t0, $zero, pre_round_end 	# $t0 == 0 end loop
 	
-	jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
-	bne $t7, 0, has_possible_pieces_End
+ 	jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
+ 	bne $t7, 0, has_possible_pieces_End
 			
 	addi $s1, $s1, 1			# $s1 += 1
- 	j has_possible_pieces			# back loop
-has_possible_pieces_End:
+  	j has_possible_pieces			# back loop
+ has_possible_pieces_End:
 
 inputPieceOfPlayer1:
 # Print prompt
@@ -156,7 +157,7 @@ givePiecesPlayer2:
 	mul $t3, $t5, 4	# $t3 = $t5($t5 is a quant interator of pieces player 2)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t9, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t5, $t5, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
@@ -165,7 +166,7 @@ givePiecesPlayer3:
 	mul $t3, $t6, 4	# $t3 = $t6($t6 is a quant interator of pieces player 3)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t9, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t6, $t6, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
@@ -174,7 +175,7 @@ givePiecesPlayer4:
 	mul $t3, $t7, 4	# $t3 = $t7($t7 is a quant interator of pieces player 4)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t9, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t7, $t7, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer

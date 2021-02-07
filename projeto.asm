@@ -194,7 +194,7 @@ givePiecesPlayer2:
 	mul $t3, $t5, 4	# $t3 = $t5($t5 is a quant interator of pieces player 2)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t9, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t5, $t5, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
@@ -203,7 +203,7 @@ givePiecesPlayer3:
 	mul $t3, $t6, 4	# $t3 = $t6($t6 is a quant interator of pieces player 3)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t9, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t6, $t6, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
@@ -212,7 +212,7 @@ givePiecesPlayer4:
 	mul $t3, $t7, 4	# $t3 = $t7($t7 is a quant interator of pieces player 4)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t9, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t7, $t7, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
