@@ -277,7 +277,7 @@ pieceVerification: # ($s1 with param)(return => $t1 for piece selected, rerturn 
 										# if $t7 == 1, first place of board is valid, if t7 == 2 last place of board is valid
 addi $t1, $s1, 0				# $t1 = $s1(iteretor for on botChoicePiece)
 
-	mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
+mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogador .word
 	
 bne $s5, 0, verifyPiecePlayer1End		# if ($s5 != 0)
 verifyPiecePlayer1:
@@ -305,6 +305,8 @@ verifyPiecePlayer4End:
 	mfhi $t2				# $t2 = 1st number # ex: if number is 65, hi = 6 
 	mflo $t3				# $t3 = 2nd number
 	
+	beq $t2, 9, invalid_first_piece		# if player piece equal to 9, is not valid
+
 	# validate first round six's bomb
 	bne $s0, 1, is_not_first_Round
 	bne $t2, 6, invalid_first_piece		# first part of player's piece is diff of '6'
@@ -333,18 +335,21 @@ verifyPiecePlayer4End:
 	beq  $t2, $t4, pieceVerificationEndOkay2 # if $t2 == $t4 is valid
 	beq  $t3, $t4, pieceVerificationEndOkay2 # if $t2 == $t4 is valid
 	
-	addi $t7, $zero, 0	# $t7 = 0
+	li $t7,0
 	j pieceVerificationEnd	# go to end rotine
 	
 pieceVerificationEndOkay1:
+	addi $t1, $s1, 0
 	addi $t7, $zero, 1	# $t7 = 1
 	j pieceVerificationEnd
 pieceVerificationEndOkay2:
+	addi $t1, $s1, 0
 	addi $t7, $zero, 2	# $t7 = 1
 pieceVerificationEnd:
 jr $ra		# End rotine
 
 invalid_first_piece:
+addi $t7, $zero, 0		# $t7 = 0
 beq $s5, 3, invalid_first_piece_reset_player_iterator	# $s5 == 3 {$s5+=1; j gameloop}
 addi $s5, $s5, 1
 j gameLoop
