@@ -2,7 +2,8 @@
 # $s5 -> player iterator
 # $s3 -> lastpiece board
 # $t1 -> piece that will be played 
-
+# $t7 -> results of pieces verification
+# $s2 -> has pieces in round 
 .data
 pieces: .word 0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 22, 23, 24, 25, 26, 33, 34, 35, 36, 43, 44, 45, 46, 55, 56, 66
 jogador1: .word -0, -1, -1, -1, -1, -1, -1	# save pieces
@@ -11,7 +12,8 @@ jogador3: .word -2, -1, -1, -1, -1, -1, -1	# save pieces
 jogador4: .word -3, -1, -1, -1, -1, -1, -1	# save pieces
 board:    .word 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 
 
-data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1 \0"
+data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1 \n"
+data_board_out: .asciiz "-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 \n" 
 
 prompt_selectPiece: .asciiz "*Select piece: (0-6)"
 
@@ -20,6 +22,7 @@ player_info_prompt_str: .asciiz "-*Player: " 		# 10 positions
 var_number_info_str: 	.asciiz "000"			# including '\0'
 
 player_pieces_prompt_str: .asciiz "--*Player Pieces: "
+board_prompt_str: .asciiz "--*Board Pieces: "
 
 
 
@@ -62,25 +65,25 @@ addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 
 jal set_player1_str
+jal set_board_out_str
 jal print_round_info
+jal print_board_info
 jal print_player_pieces_info
 
 
-#bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
+bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlayer1End
 #verify if have possible piece
 addi $s1, $zero, 0 	# $s1 set to zero
 addi $t7, $zero, 0 	# $t7 set to zero
-# has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
-# 		beq $t0, $zero, botChoicePieceEnd 	# $t0 == 0 end loop
-		
-# 		jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
-# 		bne $t7, 0, has_possible_pieces_End
+has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+	beq $t0, $zero, pre_round_end 	# $t0 == 0 end loop
+	
+	jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
+	bne $t7, 0, has_possible_pieces_End
 			
-# 		addi $s1, $s1, 1			# $s1 += 1
-# 		j has_possible_pieces			# back loop
-# has_possible_pieces_End:
-
-#beq $t7, 0, pre_round_end		# if not has possible_piece, go to next round
+	addi $s1, $s1, 1			# $s1 += 1
+ 	j has_possible_pieces			# back loop
+has_possible_pieces_End:
 
 inputPieceOfPlayer1:
 # Print prompt
@@ -94,15 +97,30 @@ inputPieceOfPlayer1:
 	
 	add $t1, $zero,$v0		# $t1 = $v0
 	
-	#jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
-	#bne $t7, 0, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
-	#j inputPieceOfPlayer1
+	jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
+	bne $t7, 0, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
+	j inputPieceOfPlayer1
 inputPieceOfPlayer1End:
 
+addi $s2, $zero, 0 	# set flag of have piece to zero
+beq  $s5, 0, botChoicePieceEnd      # if (s5 == 0) jump to botChoicePieceEnd
+addi $s1,$zero, 0 	# $s1 set to zero
+botChoicePiece: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+		beq $t0, $zero, pre_round_end 		# $t0 == 0 end loop
+		
+		jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
+		bne $t7, 0, botChoicePieceOkay
+			
+		addi $s1, $s1, 1			# $s1 += 1
+		j botChoicePiece			# back loop
+botChoicePieceOkay:
+	addi $s2, $zero, 1				# this is a valid piece for play, so this player[$s5] have piece to play		
+botChoicePieceEnd:
+
+beq $s2, 0, pre_round_end 
+
 # $t1 save piece choice in $t1
-#TEST
-addi $t7, $zero, 2
-jal play_piece_in_board		# need($t7)
+jal play_piece_in_board		# need($t1,$t7)
 
 pre_round_end:
 
@@ -160,6 +178,37 @@ givePiecesPlayer4:
 	addi $t7, $t7, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
+
+###############################################################################################
+set_board_out_str:
+
+addi $s1, $zero,0	# this register use with iterator in boar_loopOfPieces
+addi $t4, $zero,0	# this register use with iterator in jogadorOut
+
+board_loopOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
+		beq $t0, $zero, board_loopOfPiecesEnd 	# $t0 == 0 end loop
+	mul  $t1, $s1, 4 				# $t1 = position in bytes of pieces in boardX
+	lw   $t2, board($t1)			# $t2 = board[$t1]
+	 
+	li   $s7, 10					# $s7 = 10
+	div  $t2, $s7		
+	mfhi $s7						# $s7 = 1st number
+	mflo $t2						# $t2 = 2nd number
+	
+	addi $t2, $t2, 48				# parse to ascii
+	addi $s7, $s7, 48				# parse to ascii
+	
+	sb   $t2, data_board_out($t4)	# data_board_out[$t4] = $t2
+	addi $t4, $t4, 1				# position + 1
+	sb   $s7, data_board_out($t4)	# data_board_out[$t4] = $s7
+	addi $t4, $t4, 2				# position + 2  (2 because blank space) 	
+	
+	addi $s1, $s1, 1				# $s1 += 1
+	j board_loopOfPieces # back to loop
+board_loopOfPiecesEnd:
+
+jr $ra		# End rotine
+
 ################################################################################################
 set_player1_str:
 
@@ -263,7 +312,11 @@ pieceVerificationEnd:
 jr $ra		# End rotine
 
 invalid_first_piece:
+beq $s5, 3, invalid_first_piece_reset_player_iterator	# $s5 == 3 {$s5+=1; j gameloop}
 addi $s5, $s5, 1
+j gameLoop
+invalid_first_piece_reset_player_iterator:
+addi $s5, $zero, 0
 j gameLoop
 
 ###############################################################################################
@@ -342,6 +395,21 @@ print_player_pieces_info:
 	syscall
 
 	jr $ra
+
+##########################################################################################
+print_board_info:	
+	# Print prompt round info
+	la $a0, board_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+
+	# Print prompt round info
+	la $a0, data_board_out # address of string to print
+	li $v0, 4
+	syscall
+
+	jr $ra
+
 
 ###############################################################################################
 print_round_info:	# (need)$s0,$s5 | (use)$t7,$t8,$t9
