@@ -21,9 +21,9 @@
 .data
 pieces: .word 0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 22, 23, 24, 25, 26, 33, 34, 35, 36, 43, 44, 45, 46, 55, 56, 66
 jogador1: .word -0, -1, -1, -1, -1, -1, -1	# save pieces
-jogador2: .word -1, -1, -1, -1, -1, -1, -1
-jogador3: .word -2, -1, -1, -1, -1, -1, -1
-jogador4: .word -3, -1, -1, -1, -1, -1, -1
+jogador2: .word -1, -1, -1, -1, -1, -1, -1	# save pieces
+jogador3: .word -2, -1, -1, -1, -1, -1, -1	# save pieces
+jogador4: .word -3, -1, -1, -1, -1, -1, -1	# save pieces
 board:    .word 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 
 
 str_player1_exit: .asciiz "player1.txt"
@@ -187,33 +187,37 @@ gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
 
 ############################################################################################
 # switch between who will receive the pieces
-givePiecesPlayer1:mul $t3, $t4, 4
-	lw $t8, pieces($t9)
+givePiecesPlayer1:
+	mul $t3, $t4, 4			# $t3 = $t4($t4 is a quant interator of pieces player 1)
 	mul $t9, $s1, 4
-	sw $t9, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	lw $t8, pieces($t9)
+	sw $t8, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t4, $t4, 1
 	addi $s1, $s1, 1 		# iterator pieces		
 	j exitGivePiecesToPlayer
 	
-givePiecesPlayer2:mul $t3, $t5, 4
-	lw $t8, pieces($t9)
+givePiecesPlayer2:
+	mul $t3, $t5, 4	# $t3 = $t5($t5 is a quant interator of pieces player 2)
 	mul $t9, $s1, 4
+	lw $t8, pieces($t9)
 	sw $t9, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t5, $t5, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
 	
-givePiecesPlayer3:mul $t3, $t6, 4
-	lw $t8, pieces($t9)
+givePiecesPlayer3:
+	mul $t3, $t6, 4	# $t3 = $t6($t6 is a quant interator of pieces player 3)
 	mul $t9, $s1, 4
+	lw $t8, pieces($t9)
 	sw $t9, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t6, $t6, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
 
-givePiecesPlayer4:mul $t3, $t7, 4
-	lw $t8, pieces($t9)
+givePiecesPlayer4:
+	mul $t3, $t7, 4	# $t3 = $t7($t7 is a quant interator of pieces player 4)
 	mul $t9, $s1, 4
+	lw $t8, pieces($t9)
 	sw $t9, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
 	addi $t7, $t7, 1
 	addi $s1, $s1, 1 		# iterator pieces
@@ -304,13 +308,13 @@ verifyPiecePlayer4End:
 	# player's piece
 	li   $t5, 10				# $t5 = 10
 	div  $t2, $t5		
-	mfhi $t2				# $t2 = 1st number
+	mfhi $t2				# $t2 = 1st number # ex: if number is 65, hi = 6 
 	mflo $t3				# $t3 = 2nd number
 	
 	# validate first round six's bomb
 	bne $s0, 1, is_not_first_Round
-	bne $t2, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
-	bne $t3, 6, pieceVerificationEnd		# first part of player's piece is diff of '6'
+	bne $t2, 6, invalid_first_piece		# first part of player's piece is diff of '6'
+	bne $t3, 6, invalid_first_piece		# first part of player's piece is diff of '6'
 	j pieceVerificationEndOkay2		# this piece is '66'
 	is_not_first_Round:
 	
@@ -318,7 +322,7 @@ verifyPiecePlayer4End:
 	lw   $t4, board($zero)			# $t4 = board[0]
 	
 	div  $t4, $t5				# $t4 / ($t5 = 10)
-	mfhi $t4				# $t4 = 1st number
+	mfhi $t4					# $t4 = 1st number
 	
 	beq  $t2, $t4, pieceVerificationEndOkay1 # if $t2 == $t4 is valid
 	beq  $t3, $t4, pieceVerificationEndOkay1 # if $t2 == $t4 is valid
@@ -345,6 +349,10 @@ pieceVerificationEndOkay2:
 	addi $t7, $zero, 2	# $t7 = 1
 pieceVerificationEnd:
 jr $ra		# End rotine
+
+invalid_first_piece:
+addi $s5, $s5, 1
+j gameLoop
 
 ############################################################################################
 play_piece_in_board:	#($t1 for piece index) 
@@ -416,7 +424,7 @@ addi $s1, $zero,0	# this register use with iterator in boar_loopOfPieces
 addi $t4, $zero,0	# this register use with iterator in jogadorOut
 
 board_loopOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
-		beq $t0, $zero,board_loopOfPiecesEnd 	# $t0 == 0 end loop
+		beq $t0, $zero, board_loopOfPiecesEnd 	# $t0 == 0 end loop
 	mul  $t1, $s1, 4 				# $t1 = position in bytes of pieces in boardX
 	lw   $t2, board($t1)			# $t2 = board[$t1]
 	 
