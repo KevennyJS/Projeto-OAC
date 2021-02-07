@@ -19,10 +19,10 @@ data_board_out: .asciiz "-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -
 prompt_selectPiece: .asciiz "*Select piece: (0-6)"
 
 round_info_prompt_str: .asciiz "* Round: " 		# 9 positions
-player_info_prompt_str: .asciiz "-*Player1: " 		# 10 positions
+player_info_prompt_str: .asciiz "-*Player now: " 	# 10 positions
 var_number_info_str: 	.asciiz "000"			# including '\0'
 
-player_pieces_prompt_str: .asciiz "--*Player Pieces: "
+player_pieces_prompt_str: .asciiz "--*Player(1) Pieces: "
 board_prompt_str: .asciiz "--*Board Pieces: "
 
 
@@ -102,7 +102,6 @@ inputPieceOfPlayer1:
 	add $t1, $s1,$zero
 	jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
 	bne $t7, 0, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
-	j inputPieceOfPlayer1
 inputPieceOfPlayer1End:
 
 addi $s2, $zero, 0 	# set flag of have piece to zero
@@ -361,14 +360,14 @@ beq $t7, 2, play_last_place_board
 
 play_first_place_board:
 # for (int i = 0; i<($s3+1)) # precisa deslocar todas pe�as uma casa pra frente
-add $s1, $zero, $s3
-add $t0, $zero, $zero		 # $t0 = 0
+subi $s1, $s3, 1
+subi $t0, $zero, 1		 # $t0 = 0
 reposition_board_loop: beq $t0, $s1, reposition_board_loop_end			# for i=s3;i>0+1;i--  	
 		addi $t9, $s1, 1							# $t9 = nextpostion
 
 		mul $t8, $s1, 4								# $t8 = ($s1*4)
 		lw  $s6, board($t8)							# $t6 = board[$t8]
-
+		
 		mul  $t9, $t9, 4
 		sw $s6, board($t9)							# board[$s1+1] = board[$s1]
 		
@@ -378,7 +377,7 @@ reposition_board_loop: beq $t0, $s1, reposition_board_loop_end			# for i=s3;i>0+
 reposition_board_loop_end: 
 
 sw $t2, board($zero)								# board[0] = $t2
-
+j play_place_board_end
 play_last_place_board:
 mul $t8, $s3, 4		# last position number * 4
 sw $t2, board($t8)	# board[$t8] 
