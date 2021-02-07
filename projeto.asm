@@ -20,10 +20,10 @@
 
 .data
 pieces: .word 0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 22, 23, 24, 25, 26, 33, 34, 35, 36, 43, 44, 45, 46, 55, 56, 66
-jogador1: .word -0 -1 -1 -1 -1 -1 -1
-jogador2: .word -1 -1 -1 -1 -1 -1 -1
-jogador3: .word -2 -1 -1 -1 -1 -1 -1
-jogador4: .word -3 -1 -1 -1 -1 -1 -1
+jogador1: .word -0, -1, -1, -1, -1, -1, -1	# save pieces
+jogador2: .word -1, -1, -1, -1, -1, -1, -1
+jogador3: .word -2, -1, -1, -1, -1, -1, -1
+jogador4: .word -3, -1, -1, -1, -1, -1, -1
 board:    .word 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 
 
 str_player1_exit: .asciiz "player1.txt"
@@ -37,15 +37,15 @@ data_board_out_end:
 prompt_selectPiece: .asciiz "Select piece: (0-6)"
 reply_prompt_pieceNumber: .space 2 # including '\0'
 
-round_info_prompt_str: .asciiz "* Round " 		# 8 positions
-player_info_prompt_str: .asciiz "* Player " 		# 9 positions
-var_number_info_str: .space 3 				# including '\0'
+round_info_prompt_str: .asciiz "* Round: " 	# 9 positions
+player_info_prompt_str: .asciiz "| Player: " 	# 10 positions
+var_number_info_str: 	.space 3 			# including '\0'
 
-ln: .space 1	# it's '\n'
+ln_str: .space 1	# it's '\n'
 
 .text
 li $t0, 0xa
-sb $t0, ln($zero) 
+sb $t0, ln_str($zero) 
 
 addi $t0, $zero, 0		#$t0 = 0
 distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
@@ -87,7 +87,7 @@ addi $s3, $zero,0	# set last piece position
 addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 
-jal print_nextline
+#jal print_nextline
 jal print_round_info
 
 # in here write in file player 1 pieces
@@ -163,10 +163,7 @@ beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next roun
 # $t1 save piece choice in $t1
 mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
 
-# TODO para salvar o numero no tabuleiro vai ter que tira o mod 10 , pq ai separa o numero em dois , e mesmo que o numero n�o seja uma dezena ele se transforma em dezena. 
-# TODO play the piece
 jal play_piece_in_board
-
 
 # TODO if Jogador X tem zero pieces ? 
 # TODO if se o jogo fechou
@@ -191,27 +188,35 @@ gameLoopEnd: 	addi $v0, $zero, 10 #syscal of end program
 ############################################################################################
 # switch between who will receive the pieces
 givePiecesPlayer1:mul $t3, $t4, 4
-	 sw $s1, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
-	 addi $t4, $t4, 1
-	 addi $s1, $s1, 1 		# iterator pieces		
+	lw $t8, pieces($t9)
+	mul $t9, $s1, 4
+	sw $t9, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	addi $t4, $t4, 1
+	addi $s1, $s1, 1 		# iterator pieces		
 	j exitGivePiecesToPlayer
 	
 givePiecesPlayer2:mul $t3, $t5, 4
-	 sw $s1, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
-	 addi $t5, $t5, 1
-	 addi $s1, $s1, 1 		# iterator pieces
+	lw $t8, pieces($t9)
+	mul $t9, $s1, 4
+	sw $t9, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	addi $t5, $t5, 1
+	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
 	
 givePiecesPlayer3:mul $t3, $t6, 4
-	 sw $s1, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
-	 addi $t6, $t6, 1
-	 addi $s1, $s1, 1 		# iterator pieces
+	lw $t8, pieces($t9)
+	mul $t9, $s1, 4
+	sw $t9, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	addi $t6, $t6, 1
+	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
 
 givePiecesPlayer4:mul $t3, $t7, 4
-	 sw $s1, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
-	 addi $t7, $t7, 1
-	 addi $s1, $s1, 1 		# iterator pieces
+	lw $t8, pieces($t9)
+	mul $t9, $s1, 4
+	sw $t9, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	addi $t7, $t7, 1
+	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
 #########################################################
 
@@ -251,8 +256,8 @@ loopOfPieces: slti $t0, $s1, 7			# for i=0;i<7;i++
 	 
 	li   $s7, 10				# $s7 = 10
 	div  $t2, $s7		
-	mfhi $t2				# $t2 = 1st number
-	mflo $s7				# $s7 = 2nd number
+	mfhi $s7				# $s7 = 1st number
+	mflo $t2				# $t2 = 2nd number
 	
 	addi $t2, $t2, 48			# parse to ascii
 	addi $s7, $s7, 48			# parse to ascii
@@ -378,7 +383,7 @@ beq $t7, 2, play_last_place_board
 play_first_place_board:
 # for (int i = 0; i<($s3+1)) # precisa deslocar todas pe�as uma casa pra frente
 add $s1, $zero, $s3
-add $t0, $zero, $zero		# $t0 = 0
+add $t0, $zero, $zero		 # $t0 = 0
 reposition_board_loop: beq $t0, $s1, reposition_board_loop_end			# for i=s3;i>0+1;i--  	
 		addi $t9, $s1, 1							# $t9 = nextpostion
 
@@ -477,10 +482,9 @@ print_round_info:	# (need)$s0,$s5 | (use)$t7,$t8,$t9
 	addi $t7, $t7, 1			# position + 1
 	sb   $t9, var_number_info_str($t7)	# jogadorForOut[$t7] = $t4	
 	addi $t7, $t7, 1
-	li   $t9, 0x20
+	li   $t9, 0x2d
 	sb   $t9, var_number_info_str($t7)
 		
-
 	# Print var
 	la $a0, var_number_info_str  # address of string to print
 	li $v0, 4
@@ -498,7 +502,7 @@ print_round_info:	# (need)$s0,$s5 | (use)$t7,$t8,$t9
 	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
 	addi $t7, $t7, 1
 	
-	addi $t8, $s5, 48			# parse to ascii
+	addi $t8, $s5, 49			# parse to ascii
 	
 	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
 	addi $t7, $t7, 1			# position + 1
@@ -515,7 +519,7 @@ print_round_info:	# (need)$s0,$s5 | (use)$t7,$t8,$t9
 ###################################################################################
 
 print_nextline:
-	la $a0, ln($zero)  # address of string to print
+	la $a0, ln_str  # address of string to print
 	li $v0, 4
 	syscall
 
