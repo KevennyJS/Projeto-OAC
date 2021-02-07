@@ -308,9 +308,10 @@ verifyPiecePlayer4End:
 	beq $t2, 9, invalid_first_piece		# if player piece equal to 9, is not valid
 
 	# validate first round six's bomb
-	bne $s0, 1, is_not_first_Round
+	bne $s4, 1, is_not_first_Round
 	bne $t2, 6, invalid_first_piece		# first part of player's piece is diff of '6'
 	bne $t3, 6, invalid_first_piece		# first part of player's piece is diff of '6'
+	li $s4, 0
 	j pieceVerificationEndOkay2		# this piece is '66'
 	is_not_first_Round:
 	
@@ -350,12 +351,7 @@ jr $ra		# End rotine
 
 invalid_first_piece:
 addi $t7, $zero, 0		# $t7 = 0
-beq $s5, 3, invalid_first_piece_reset_player_iterator	# $s5 == 3 {$s5+=1; j gameloop}
-addi $s5, $s5, 1
-j gameLoop
-invalid_first_piece_reset_player_iterator:
-addi $s5, $zero, 0
-j gameLoop
+jr $ra
 
 ############################################################################################
 play_piece_in_board:	#($t1 for piece index) 
@@ -417,6 +413,7 @@ sw $t2, board($t8)	# board[$t8]
 
 
 play_place_board_end:
+addi $s3, $s3, 1	#$s3+=1
 jr $ra #end rotine
 
 
