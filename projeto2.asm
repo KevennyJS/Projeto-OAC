@@ -12,20 +12,18 @@ board:    .word 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 
 data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1"
 
 prompt_selectPiece: .asciiz "Select piece: (0-6)"
-reply_prompt_pieceNumber: .space 2 # including '\0'
+reply_prompt_pieceNumber: .asciiz "00" # including '\0'
 
 round_info_prompt_str: .asciiz "* Round: " 		# 9 positions
-player_info_prompt_str: .asciiz "| Player: " 		# 10 positions
-var_number_info_str: 	.space 3 			# including '\0'
+player_info_prompt_str: .asciiz "-*Player: " 		# 10 positions
+var_number_info_str: 	.asciiz "000"			# including '\0'
 
-player_pieces_prompt_str: .asciiz "Player Pieces: "
+player_pieces_prompt_str: .asciiz "--*Player Pieces: "
 
-ln_str: .space 1					# it's '\n'
+ln_str: .asciiz ""			# it's '\n'
 
 
 .text
-li $t0, 0xa
-sb $t0, ln_str($zero) 
 
 addi $t0, $zero, 0		#$t0 = 0
 distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
@@ -63,6 +61,7 @@ addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
 
 jal set_player1_str
+jal print_round_info
 jal print_player_pieces_info
 
 
@@ -162,6 +161,63 @@ print_player_pieces_info:
 
 	# Print prompt round info
 	la $a0, data_jogadorForOut # address of string to print
+	li $v0, 4
+	syscall
+
+	jr $ra
+
+###############################################################################################
+print_round_info:	# (need)$s0,$s5 | (use)$t7,$t8,$t9
+
+	# Print prompt round info
+	la $a0, round_info_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+
+	# round number
+	addi $t7, $zero, 0
+	li   $t9, 10				# $t9 = 10
+	div  $s0, $t9		
+	mfhi $t9				# $t9 = 1st number
+	mflo $t8				# $t8 = 2nd number
+	
+	addi $t8, $t8, 48			# parse to ascii
+	addi $t9, $t9, 48			# parse to ascii
+	
+	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
+	addi $t7, $t7, 1			# position + 1
+	sb   $t9, var_number_info_str($t7)	# jogadorForOut[$t7] = $t4	
+	addi $t7, $t7, 1
+	li   $t9, 0xa
+	sb   $t9, var_number_info_str($t7)
+		
+	# Print var
+	la $a0, var_number_info_str  # address of string to print
+	li $v0, 4
+	syscall
+
+	# Print prompt player info
+	la $a0, player_info_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+
+	# round number
+	addi $t7, $zero, 0
+	
+	li   $t8,48
+	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
+	addi $t7, $t7, 1
+	
+	addi $t8, $s5, 49			# parse to ascii
+	
+	sb   $t8, var_number_info_str($t7)	# jogadorForOut[$t7] = $t3
+	addi $t7, $t7, 1			# position + 1
+	li   $t8, 0xa
+	sb   $t8, var_number_info_str($t7)
+		
+
+	# Print var
+	la $a0, var_number_info_str  # address of string to print
 	li $v0, 4
 	syscall
 
