@@ -35,17 +35,15 @@ data_board_out: .asciiz "-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -
 data_board_out_end:
 
 prompt_selectPiece: .asciiz "Select piece: (0-6)"
-reply_prompt_pieceNumber: .space 2 # including '\0'
+reply_prompt_pieceNumber: .asciiz "00" # including '\0'
 
-round_info_prompt_str: .asciiz "* Round: " 	# 9 positions
-player_info_prompt_str: .asciiz "| Player: " 	# 10 positions
-var_number_info_str: 	.space 3 			# including '\0'
+round_info_prompt_str: .asciiz "* Round: " 		# 9 positions
+player_info_prompt_str: .asciiz "-*Player: " 		# 10 positions
+var_number_info_str: 	.asciiz "000"			# including '\0'
 
-ln_str: .space 1	# it's '\n'
+ln_str: .asciiz ""			# it's '\n'
 
 .text
-li $t0, 0xa
-sb $t0, ln_str($zero) 
 
 addi $t0, $zero, 0		#$t0 = 0
 distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++ 
