@@ -345,7 +345,11 @@ pieceVerificationEnd:
 jr $ra		# End rotine
 
 invalid_first_piece:
+beq $s5, 3, invalid_first_piece_reset_player_iterator	# $s5 == 3 {$s5+=1; j gameloop}
 addi $s5, $s5, 1
+j gameLoop
+invalid_first_piece_reset_player_iterator:
+addi $s5, $zero, 0
 j gameLoop
 
 ############################################################################################
