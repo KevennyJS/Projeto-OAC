@@ -5,7 +5,7 @@
 # $t7 -> results of pieces verification
 # $s2 -> has pieces in round 
 .data
-pieces: .word 0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 22, 23, 24, 25, 26, 33, 34, 35, 36, 43, 44, 45, 46, 55, 56, 66
+pieces: .word 0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 22, 23, 24, 25, 26, 33, 34, 35, 36, 44, 45, 46, 55, 56, 66
 jogador1: .word -0, -1, -1, -1, -1, -1, -1	# save pieces
 jogador2: .word -1, -1, -1, -1, -1, -1, -1	# save pieces
 jogador3: .word -2, -1, -1, -1, -1, -1, -1	# save pieces
@@ -33,7 +33,7 @@ distributionOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 		beq $t0, $zero,distributionOfPiecesEnd 	# $t0 == 0 end loop
 
 		li $v0, 42            	# system call to generate random int
-		la $a1, 4       	# where you set the max integer on random
+		la $a1, 4       		# where you set the max integer on random
 		syscall				
 		
 		addi $s5, $a0, 0 	# $s5 = random num (0 - 3)
