@@ -128,17 +128,14 @@ inputPieceOfPlayer1:
 	syscall
 
 # Input piece
-	la $a0, reply_prompt_pieceNumber # address to store string at
-	li $a1, 2 # maximum number of chars (including '\0')
-	li $v0, 8
-	syscall
+	li $v0, 5
+	syscall		#return int on $v0
 	
-	# have problem in here
-	lb   $t1, reply_prompt_pieceNumber	# $t1 = input_prompt # $t1 recive bytes number(ascii code in dec)
-	sub  $t1, $t1, 48 			
+	add $t1, $zero,$v0		# $t1 = $v0
+# verify piece selected		
 	jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
 	bne $t7, 0, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
-
+	j inputPieceOfPlayer1
 inputPieceOfPlayer1End:
 
 addi $s2, $zero, 0 	# set flag of have piece to zero
@@ -159,7 +156,6 @@ botChoicePieceEnd:
 beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next round
 
 # $t1 save piece choice in $t1
-mul  $t1, $t1, 4 			# $t1 = position in bytes of pieces in jogadorX
 
 jal play_piece_in_board
 
