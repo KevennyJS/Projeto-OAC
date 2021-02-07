@@ -4,6 +4,7 @@
 # $t1 -> piece that will be played 
 # $t7 -> results of pieces verification
 # $s2 -> has pieces in round 
+# $s4 -> with flag for first round at piece six six
 .data
 pieces: .word 0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 22, 23, 24, 25, 26, 33, 34, 35, 36, 44, 45, 46, 55, 56, 66
 jogador1: .word -0, -1, -1, -1, -1, -1, -1	# save pieces
@@ -60,6 +61,7 @@ j distributionOfPieces 					# back to distributionOfPieces
 distributionOfPiecesEnd:
 
 ## ====== GAMELOOP ====== ##
+addi $s4, $zero, 1 # true for first round need six bomb
 addi $s5, $zero, 0 # $s5 = 0
 addi $s0, $zero, 1 # flag for gameLoop ($s0 = 1)
 gameLoop: beq $s0, 0, gameLoopEnd # $s0 == 0 then go to gameLoopEnd
@@ -76,7 +78,7 @@ bne $s5, 0, inputPieceOfPlayer1End      # if (s5 != 0) jump to inputPieceOfPlaye
 addi $s1, $zero, 0 	# $s1 set to zero
 addi $t7, $zero, 0 	# $t7 set to zero
 
- has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+has_possible_pieces: slti $t0, $s1, 7			# for i=0;i<7;i++ 
  	beq $t0, $zero, pre_round_end 	# $t0 == 0 end loop
 	
  	jal pieceVerification			# ($s1 with param)(return => $t1 for piece selected, rerturn => $t7 result of verification)
@@ -148,7 +150,7 @@ givePiecesPlayer1:
 	mul $t3, $t4, 4			# $t3 = $t4($t4 is a quant interator of pieces player 1)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t8, jogador1($t3)		# jogador1[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador1($t3)		# jogador1[$t3] = $s2  (obs: $t3 equal to $t3 * 4)
 	addi $t4, $t4, 1
 	addi $s1, $s1, 1 		# iterator pieces		
 	j exitGivePiecesToPlayer
@@ -157,7 +159,7 @@ givePiecesPlayer2:
 	mul $t3, $t5, 4	# $t3 = $t5($t5 is a quant interator of pieces player 2)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t8, jogador2($t3)		# jogador2[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador2($t3)		# jogador2[$t3] = $s2  (obs: $t3 equal to $t3 * 4)
 	addi $t5, $t5, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
@@ -166,7 +168,7 @@ givePiecesPlayer3:
 	mul $t3, $t6, 4	# $t3 = $t6($t6 is a quant interator of pieces player 3)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t8, jogador3($t3)		# jogador3[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador3($t3)		# jogador3[$t3] = $s2  (obs: $t3 equal to $t3 * 4)
 	addi $t6, $t6, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
@@ -175,7 +177,7 @@ givePiecesPlayer4:
 	mul $t3, $t7, 4	# $t3 = $t7($t7 is a quant interator of pieces player 4)
 	mul $t9, $s1, 4
 	lw $t8, pieces($t9)
-	sw $t8, jogador4($t3)		# jogador4[$s3] = $s2  (obs: $t3 equal to $s3 * 4)
+	sw $t8, jogador4($t3)		# jogador4[$t3] = $s2  (obs: $t3 equal to $t3 * 4)
 	addi $t7, $t7, 1
 	addi $s1, $s1, 1 		# iterator pieces
 	j exitGivePiecesToPlayer
@@ -276,9 +278,10 @@ verifyPiecePlayer4End:
 	beq $t2, 9, invalid_first_piece		# if player piece equal to 9, is not valid
 
 	# validate first round six's bomb
-	bne $s0, 1, is_not_first_Round
+	bne $s4, 1, is_not_first_Round
 	bne $t2, 6, invalid_first_piece		# first part of player's piece is diff of '6'
 	bne $t3, 6, invalid_first_piece		# first part of player's piece is diff of '6'
+	li $s4, 0
 	j pieceVerificationEndOkay2		# this piece is '66'
 	is_not_first_Round:
 	
@@ -318,12 +321,8 @@ jr $ra		# End rotine
 
 invalid_first_piece:
 addi $t7, $zero, 0		# $t7 = 0
-beq $s5, 3, invalid_first_piece_reset_player_iterator	# $s5 == 3 {$s5+=1; j gameloop}
-addi $s5, $s5, 1
-j gameLoop
-invalid_first_piece_reset_player_iterator:
-addi $s5, $zero, 0
-j gameLoop
+jr $ra
+
 
 ###############################################################################################
 
@@ -384,8 +383,8 @@ play_last_place_board:
 mul $t8, $s3, 4		# last position number * 4
 sw $t2, board($t8)	# board[$t8] 
 
-
 play_place_board_end:
+addi $s3, $s3, 1	#$s3+=1
 jr $ra #end rotine
 
 ##########################################################################################
