@@ -27,7 +27,7 @@ jogador4: .word -3, -1, -1, -1, -1, -1, -1	# save pieces
 board:    .word 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 
 
 str_player1_exit: .asciiz "player1.txt"
-data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1" 
+data_jogadorForOut: .asciiz "-1 -1 -1 -1 -1 -1 -1 \n" 
 data_jogadorForOut_end:
 
 str_board_exit: .asciiz "board.txt"
@@ -38,11 +38,13 @@ prompt_selectPiece: .asciiz "Select piece: (0-6)"
 reply_prompt_pieceNumber: .asciiz "00" # including '\0'
 
 round_info_prompt_str: .asciiz "* Round: " 		# 9 positions
-player_info_prompt_str: .asciiz "-*Player: " 		# 10 positions
+player_info_prompt_str: .asciiz "-*Player now: " 	# 10 positions
 var_number_info_str: 	.asciiz "000"			# including '\0'
 
-ln_str: .asciiz ""			# it's '\n'
-
+player1_win_prompt_str: .asciiz "\n**** Player 1 GANHOU ****"
+player2_win_prompt_str: .asciiz "\n**** Player 2 GANHOU ****"
+player3_win_prompt_str: .asciiz "\n**** Player 3 GANHOU ****"
+player4_win_prompt_str: .asciiz "\n**** Player 4 GANHOU ****"
 .text
 
 addi $t0, $zero, 0		#$t0 = 0
@@ -158,9 +160,21 @@ beq $s2, 0, pre_round_end 				# if player $t5 not have piece, so go to next roun
 
 jal play_piece_in_board
 
-# TODO if Jogador X tem zero pieces ? 
-# TODO if se o jogo fechou
+bne $s5,0, player1_end_game_verify_call_end
+jal player1_end_game_verify
+player1_end_game_verify_call_end:
 
+bne $s5,1,player2_end_game_verify_call_end 
+jal player2_end_game_verify
+player2_end_game_verify_call_end:
+
+bne $s5,2, player3_end_game_verify_call_end 
+jal player3_end_game_verify
+player3_end_game_verify_call_end:
+
+bne $s5,3, player4_end_game_verify_call_end
+jal player4_end_game_verify
+player4_end_game_verify_call_end:
 
 pre_round_end:
 
@@ -573,3 +587,108 @@ print_nextline:
 	syscall
 
 jr $ra
+
+###################################################################################
+player1_end_game_verify:
+addi $s1, $zero,0	# this register use with iterator in loopOfPieces
+addi $t4, $zero,0	# this register use with iterator in jogadorOut
+
+endgame_verify_player1_loop: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+		beq $t0, $zero,endgame_verify_player1_loop_end 	# $t0 == 0 end loop
+	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in jogadorX
+	lw   $t2, jogador1($t1)			# $t2 = jogador[$t1]
+
+	bne $t2, 99, is_not_endgame_player1
+	
+	addi $s1, $s1, 1			# $s1 += 1
+	j endgame_verify_player1_loop # back to loop
+endgame_verify_player1_loop_end:
+
+li $s0, 0	# set final
+# print "player 1 ganhou!!! " 
+	la $a0, player1_win_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+	# end game
+	addi $v0, $zero, 10 #syscal of end program
+	syscall
+is_not_endgame_player1:
+jr $ra		# End rotine
+###################################################################################
+player2_end_game_verify:
+addi $s1, $zero,0	# this register use with iterator in loopOfPieces
+addi $t4, $zero,0	# this register use with iterator in jogadorOut
+
+endgame_verify_player2_loop: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+		beq $t0, $zero,endgame_verify_player2_loop_end 	# $t0 == 0 end loop
+	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in jogadorX
+	lw   $t2, jogador2($t1)			# $t2 = jogador[$t1]
+
+	bne $t2, 99, is_not_endgame_player2
+	
+	addi $s1, $s1, 1			# $s1 += 1
+	j endgame_verify_player2_loop # back to loop
+endgame_verify_player2_loop_end:
+
+li $s0, 0	# set final
+# print "player 2 ganhou!!! "
+	la $a0, player2_win_prompt_str # address of string to print
+	li $v0, 4
+	syscall 
+	# end game
+	addi $v0, $zero, 10 #syscal of end program
+	syscall
+is_not_endgame_player2:
+jr $ra		# End rotine
+####################################################################################
+player3_end_game_verify:
+addi $s1, $zero,0	# this register use with iterator in loopOfPieces
+addi $t4, $zero,0	# this register use with iterator in jogadorOut
+
+endgame_verify_player3_loop: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+		beq $t0, $zero,endgame_verify_player3_loop_end 	# $t0 == 0 end loop
+	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in jogadorX
+	lw   $t2, jogador3($t1)			# $t2 = jogador[$t1]
+
+	bne $t2, 99, is_not_endgame_player3
+	
+	addi $s1, $s1, 1			# $s1 += 1
+	j endgame_verify_player3_loop # back to loop
+endgame_verify_player3_loop_end:
+
+li $s0, 0	# set final
+# print "player 3 ganhou!!! "
+	la $a0, player3_win_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+	# end game
+	addi $v0, $zero, 10 #syscal of end program
+	syscall
+is_not_endgame_player3:
+jr $ra		# End rotine
+####################################################################################
+player4_end_game_verify:
+addi $s1, $zero,0	# this register use with iterator in loopOfPieces
+addi $t4, $zero,0	# this register use with iterator in jogadorOut
+
+endgame_verify_player4_loop: slti $t0, $s1, 7			# for i=0;i<7;i++ 
+		beq $t0, $zero,endgame_verify_player4_loop_end 	# $t0 == 0 end loop
+	mul  $t1, $s1, 4 			# $t1 = position in bytes of pieces in jogadorX
+	lw   $t2, jogador4($t1)			# $t2 = jogador[$t1]
+
+	bne $t2, 99, is_not_endgame_player4
+	
+	addi $s1, $s1, 1			# $s1 += 1
+	j endgame_verify_player4_loop # back to loop
+endgame_verify_player4_loop_end:
+
+li $s0, 0	# set final
+# print "player 3 ganhou!!! " 
+	la $a0, player4_win_prompt_str # address of string to print
+	li $v0, 4
+	syscall
+	# end game
+	addi $v0, $zero, 10 #syscal of end program
+	syscall
+is_not_endgame_player4:
+jr $ra		# End rotine
