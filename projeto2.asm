@@ -106,6 +106,7 @@ inputPieceOfPlayer1:
 	add $t1, $s1,$zero
 	jal pieceVerification			# ($t1 for piece selected, $t7 result of verification)
 	bne $t7, 0, botChoicePieceOkay		# "botChoicePieceOkay" is a point where the piece is valid, and $ s2 is set to 1, (so there is a piece available in the round)
+	j inputPieceOfPlayer1
 inputPieceOfPlayer1End:
 
 addi $s2, $zero, 0 	# set flag of have piece to zero
@@ -126,6 +127,9 @@ botChoicePieceEnd:
 beq $s2, 0, pre_round_end 
 
 # $t1 save piece choice in $t1
+beq $s4, 0, play_piece  
+li $s4, 0
+play_piece:
 jal play_piece_in_board		# need($t1,$t7)
 
 bne $s5,0, player1_end_game_verify_call_end
@@ -301,7 +305,7 @@ verifyPiecePlayer4End:
 	bne $s4, 1, is_not_first_Round
 	bne $t2, 6, invalid_first_piece		# first part of player's piece is diff of '6'
 	bne $t3, 6, invalid_first_piece		# first part of player's piece is diff of '6'
-	li $s4, 0
+	
 	j pieceVerificationEndOkay2		# this piece is '66'
 	is_not_first_Round:
 	
