@@ -194,8 +194,8 @@ board_loopOfPieces: slti $t0, $s1, 28			# for i=0;i<28;i++
 	 
 	li   $s7, 10					# $s7 = 10
 	div  $t2, $s7		
-	mfhi $s7						# $s7 = 1st number
-	mflo $t2						# $t2 = 2nd number
+	mflo $t2						# $t2 = 1nd number
+	mfhi $s7						# $s7 = 2st number
 	
 	addi $t2, $t2, 48				# parse to ascii
 	addi $s7, $s7, 48				# parse to ascii
@@ -224,8 +224,8 @@ set_player_loop_piece: slti $t0, $s1, 7			# for i=0;i<7;i++
 	 
 	li   $s7, 10				# $s7 = 10
 	div  $t2, $s7		
-	mfhi $s7				# $s7 = 1st number
-	mflo $t2				# $t2 = 2nd number
+	mflo $t2				# $t2 = 1nd number
+	mfhi $s7				# $s7 = 2st number
 	
 	addi $t2, $t2, 48			# parse to ascii
 	addi $s7, $s7, 48			# parse to ascii
@@ -271,8 +271,8 @@ verifyPiecePlayer4End:
 	# player's piece
 	li   $t5, 10				# $t5 = 10
 	div  $t2, $t5		
-	mfhi $t2				# $t2 = 1st number # ex: if number is 65, hi = 6 
-	mflo $t3				# $t3 = 2nd number
+	mflo $t2				# $t2 = 1st number # ex: if number is 65, lo = 6 
+	mfhi $t3				# $t3 = 2nd number
 	
 	beq $t2, 9, invalid_first_piece		# if player piece equal to 9, is not valid
 
@@ -288,19 +288,19 @@ verifyPiecePlayer4End:
 	lw   $t4, board($zero)			# $t4 = board[0]
 	
 	div  $t4, $t5				# $t4 / ($t5 = 10)
-	mfhi $t4					# $t4 = 1st number
+	mflo $t4					# $t4 = 1st number
 	
 	beq  $t2, $t4, pieceVerificationEndOkay1 # if $t2 == $t4 is valid
 	beq  $t3, $t4, pieceVerificationEndOkay1 # if $t2 == $t4 is valid
 	
 	#last piece of board
-	mul  $t6, $s3, 4			# $s3 -> last piece of board (position)
+	subi $t6, $s3, 1
+	mul  $t6, $t6, 4			# $s3 -> last piece of board (position)
 	lw   $t4, board($t6)			# $t4 = board[0]
 	
-	beq $t4, -1, pieceVerificationEndOkay2	# if last piece of board equal -1, so not have pieces in board
-	
 	div  $t4, $t5				# $t4 / ($t5 = 10)
-	mflo $t4				# $t4 = 2nd number
+	mfhi $t4					
+	# $t4 = 2nd number
 	
 	beq  $t2, $t4, pieceVerificationEndOkay2 # if $t2 == $t4 is valid
 	beq  $t3, $t4, pieceVerificationEndOkay2 # if $t2 == $t4 is valid
@@ -359,7 +359,20 @@ beq $t7, 1, play_first_place_board
 beq $t7, 2, play_last_place_board
 
 play_first_place_board:
-# for (int i = 0; i<($s3+1)) # precisa deslocar todas pe�as uma casa pra frente
+li $t5, 10
+
+div  $t2, $t5
+mfhi $t8	# get piecePlayeX[1]
+
+lw $s6, board($zero)	# get first piece of board
+div $s6, $t5	
+mflo $s6	# get pieceboard[0]
+
+beq $t8, $s6, switch_piece_place1_call_end
+
+j switch_piece
+switch_piece_place1_call_end:
+
 subi $s1, $s3, 1
 subi $t0, $zero, 1		 # $t0 = 0
 reposition_board_loop: beq $t0, $s1, reposition_board_loop_end			# for i=s3;i>0+1;i--  	
@@ -378,14 +391,43 @@ reposition_board_loop_end:
 
 sw $t2, board($zero)								# board[0] = $t2
 j play_place_board_end
-play_last_place_board:
+
+play_last_place_board: 
+
+li $t5, 10
+
+div  $t2, $t5
+mflo $t8	# get piecePlayeX[0]
+
+subi $s1, $s3, 1
+mul $s1, $s1, 4
+lw $s6, board($s1)	# get first piece of board
+div $s6, $t5	
+mfhi $s6	# get pieceboard[1]
+
+beq $t8, $s6, switch_piece_place2_call_end
+
+j switch_piece
+
+switch_piece_place2_call_end:
 mul $t8, $s3, 4		# last position number * 4
-sw $t2, board($t8)	# board[$t8] 
+sw $t2, board($t8)	# board[$t8]
 
 play_place_board_end:
 addi $s3, $s3, 1	#$s3+=1
 jr $ra #end rotine
 
+switch_piece:
+	li   $t5, 10				# $t5 = 10
+	div  $t2, $t5		
+	mflo $t2				# $t2 = 1st number # ex: if number is 65, hi = 6 
+	mfhi $t3				# $t3 = 2nd number
+	
+	mul $t3, $t3, 10
+	add $t2, $t3, $t2
+
+	beq $t7, 1,switch_piece_place1_call_end
+	beq $t7, 2,switch_piece_place2_call_end
 ##########################################################################################
 print_player_pieces_info:	
 	# Print prompt round info
